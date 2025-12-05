@@ -1,0 +1,169 @@
+/* Little Bites Online Menu */
+
+:root {
+  --blue: #006dab;
+  --light: #E7F3FB;
+  --radius: 18px;
+  --pill: 28px;
+}
+
+body {
+  font-family: 'Poppins', 'Nunito', sans-serif;
+  margin: 0;
+  background: #fafafa;
+}
+
+header {
+  background: var(--blue);
+  color: white;
+  padding: 32px 20px;
+  text-align: center;
+  border-bottom-left-radius: 32px;
+  border-bottom-right-radius: 32px;
+}
+
+.container {
+  max-width: 650px;
+  margin: 0 auto;
+  padding: 20px;
+  padding-bottom: 140px;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--blue);
+  margin: 26px 0 14px;
+}
+
+.card {
+  background: white;
+  padding: 16px;
+  border-radius: var(--radius);
+  margin-bottom: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+input, textarea {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.meal-card {
+  background: white;
+  padding: 16px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.meal-title {
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.price {
+  color: var(--blue);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.qty-box {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.qty-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--light);
+  border: 1px solid var(--blue);
+  color: var(--blue);
+  font-size: 20px;
+}
+
+.qty-input {
+  width: 50px;
+  text-align: center;
+  padding: 6px 0;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+.pill-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.pill {
+  padding: 10px 16px;
+  border-radius: var(--pill);
+  background: var(--light);
+  color: var(--blue);
+  cursor: pointer;
+}
+
+.pill.selected {
+  background: var(--blue);
+  color: white;
+}
+
+.sticky-footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: white;
+  padding: 16px 22px;
+  border-top: 1px solid #ddd;
+}
+
+.submit-btn {
+  width: 100%;
+  background: var(--blue);
+  color: white;
+  padding: 14px;
+  border-radius: var(--radius);
+  border: none;
+  font-size: 18px;
+  margin-top: 12px;
+}
+
+.subtotal-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
+}
+.desc-toggle {
+  font-size: 14px;
+  color: #006dab;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.desc-content {
+  font-size: 14px;
+  line-height: 1.4;
+  background: #f8f8f8;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+  display: none; /* initially hidden */
+}
+.desc-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+
+.desc-content.open {
+  max-height: 200px; /* enough room */
+}
