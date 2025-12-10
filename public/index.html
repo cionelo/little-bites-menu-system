@@ -1,0 +1,56 @@
+<!-- Little Bites Online Menu (Frontend) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Little Bites Menu (Prototype)</title>
+
+<link rel="stylesheet" href="styles.css">
+
+<!-- Canva Sans equivalents -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<header>
+  <h1>This Week's Menu</h1>
+</header>
+
+<div class="container">
+
+  <div class="section-title">Your Info</div>
+  <div class="card">
+    <input id="name" type="text" placeholder="Name (first & last)">
+    <input id="phone" type="text" placeholder="Phone Number">
+    <input id="delivery" type="text" placeholder="Pickup or Office Delivery">
+    <input id="email" type="email" placeholder="Email for Invoice">
+  </div>
+
+  <div class="section-title">Menu</div>
+  <div id="menu-area"></div>
+
+  <div class="section-title">Bite Buddy</div>
+  <div class="card">
+    <textarea id="buddy" placeholder="Buddy name(s)..."></textarea>
+  </div>
+
+  <div class="section-title">Comments</div>
+  <div class="card">
+    <textarea id="comments" placeholder="Notes or requests..."></textarea>
+  </div>
+
+</div>
+
+<div class="sticky-footer">
+  <div class="subtotal-row">
+    <span>Subtotal:</span>
+    <span id="subtotal">$0</span>
+  </div>
+  <button class="submit-btn" onclick="submitOrder()">Submit Order</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

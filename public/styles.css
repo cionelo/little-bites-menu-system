@@ -136,7 +136,7 @@ input, textarea {
   font-size: 18px;
   margin-top: 12px;
 }
-
+:last-child
 .subtotal-row {
   display: flex;
   justify-content: space-between;
