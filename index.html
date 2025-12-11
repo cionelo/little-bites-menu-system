@@ -1,25 +1,28 @@
-<!-- Little Bites Online Menu (Frontend) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Little Bites Menu (Prototype)</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Little Bites Menu</title>
 
-<link rel="stylesheet" href="styles.css">
-
-<!-- Canva Sans equivalents -->
+<!-- Fonts (Canva Sans equivalents) -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+
+<!-- Local CSS -->
+<link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
 
+<!-- HEADER -->
 <header>
   <h1>This Week's Menu</h1>
 </header>
 
+<!-- MAIN CONTENT -->
 <div class="container">
 
+  <!-- CUSTOMER INFO -->
   <div class="section-title">Your Info</div>
   <div class="card">
     <input id="name" type="text" placeholder="Name (first & last)">
@@ -28,14 +31,17 @@
     <input id="email" type="email" placeholder="Email for Invoice">
   </div>
 
+  <!-- MENU SECTION -->
   <div class="section-title">Menu</div>
-  <div id="menu-area"></div>
+  <div id="menu-area"></div>  <!-- MENU RENDERS HERE -->
 
+  <!-- BITE BUDDY -->
   <div class="section-title">Bite Buddy</div>
   <div class="card">
     <textarea id="buddy" placeholder="Buddy name(s)..."></textarea>
   </div>
 
+  <!-- COMMENTS -->
   <div class="section-title">Comments</div>
   <div class="card">
     <textarea id="comments" placeholder="Notes or requests..."></textarea>
@@ -43,6 +49,7 @@
 
 </div>
 
+<!-- STICKY FOOTER -->
 <div class="sticky-footer">
   <div class="subtotal-row">
     <span>Subtotal:</span>
@@ -51,6 +58,8 @@
   <button class="submit-btn" onclick="submitOrder()">Submit Order</button>
 </div>
 
+<!-- LOCAL JS -->
 <script src="app.js"></script>
+
 </body>
 </html>
