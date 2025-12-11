@@ -2,7 +2,7 @@
 // CONFIG
 // **************************************
 // SET THIS TO YOUR APPS SCRIPT DEPLOYMENT URL:
-const BACKEND_URL = "YOUR_WEB_APP_URL_HERE";
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbySs_eTXk7SeLBT-Q8suDoRO2F1V7GJBEwGZLnCbEqspGQ_CPAJj1XMF5Pa_LPBE_Xv/exec";
 
 let MENU = [];
 

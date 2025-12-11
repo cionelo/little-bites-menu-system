@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Meal Prep Order – Mobile Demo</title>
+
+<!-- Canva Sans equivalents -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* -------------------------
+   Base + Global
+--------------------------*/
+:root {
+  --brand-blue: #006dab;
+  --light-blue: #E7F3FB;
+  --text-dark: #333;
+  --radius-large: 18px;
+  --radius-pill: 30px;
+}
+
+body {
+  font-family: 'Poppins', 'Nunito', sans-serif;
+  margin: 0;
+  background: #fafafa;
+  color: var(--text-dark);
+}
+
+header {
+  background: var(--brand-blue);
+  padding: 28px 20px 40px;
+  text-align: center;
+  color: white;
+  border-bottom-left-radius: 32px;
+  border-bottom-right-radius: 32px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.container {
+  max-width: 650px;
+  margin: 0 auto;
+  padding: 20px;
+  padding-bottom: 120px; /* room for sticky footer */
+}
+
+/* -------------------------
+   Section Titles
+--------------------------*/
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--brand-blue);
+  margin: 28px 0 14px;
+}
+
+/* -------------------------
+   Cards + Inputs
+--------------------------*/
+.card {
+  background: white;
+  padding: 18px;
+  border-radius: var(--radius-large);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.05);
+  margin-bottom: 18px;
+}
+
+label {
+  font-weight: 500;
+  display: block;
+  margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="number"],
+textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #ddd;
+  background: white;
+  font-size: 16px;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+  font-family: inherit;
+}
+
+textarea {
+  resize: vertical;
+  height: 100px;
+}
+
+/* -------------------------
+   Meal Items
+--------------------------*/
+#meal-container {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.meal-card {
+  background: white;
+  padding: 16px;
+  border-radius: var(--radius-large);
+  margin-bottom: 16px;
+  box-shadow: 0 2px 7px rgba(0,0,0,0.05);
+
+  /* Fix invisible div bug on iOS */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+.meal-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.price {
+  color: var(--brand-blue);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* -------------------------
+   Quantity Selector
+--------------------------*/
+.qty-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.qty-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--light-blue);
+  border: 1px solid var(--brand-blue);
+  color: var(--brand-blue);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.qty-input {
+  width: 55px;
+  text-align: center;
+  font-size: 18px;
+  padding: 6px 0;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+/* -------------------------
+   Segmented Pills
+--------------------------*/
+.options-row {
+  margin-top: 10px;
+}
+
+.option-label {
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pill {
+  background: var(--light-blue);
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--brand-blue);
+  border: none;
+  transition: 0.1s;
+}
+
+.pill.selected {
+  background: var(--brand-blue);
+  color: white;
+}
+
+/* -------------------------
+   Sticky Submit Footer
+--------------------------*/
+.sticky-footer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background: white;
+  padding: 16px 22px;
+  border-top: 1px solid #ddd;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+}
+
+.submit-btn {
+  width: 100%;
+  background: var(--brand-blue);
+  color: white;
+  padding: 16px;
+  border-radius: var(--radius-large);
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.submit-btn:hover {
+  background: #005a8c;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Weekly Meal Prep Order<br>Mobile Demo</h1>
+</header>
+
+<div class="container">
+
+  <!-- CUSTOMER INFO -->
+  <div class="section-title">Your Info</div>
+  <div class="card">
+    <label>Name (first & last)</label>
+    <input type="text">
+
+    <label>Phone Number</label>
+    <input type="text">
+
+    <label>Pick-up or Office Delivery</label>
+    <input type="text" placeholder="Example: Monday 4:30 PM">
+
+    <label>Email for invoice</label>
+    <input type="email">
+  </div>
+
+  <!-- MENU SECTION -->
+  <div class="section-title">Menu</div>
+  <div id="meal-container"></div>
+
+  <!-- Bite Buddy -->
+  <div class="section-title">Bite Buddy</div>
+  <div class="card">
+    <textarea placeholder="List your buddy's names..."></textarea>
+  </div>
+
+  <!-- Comments -->
+  <div class="section-title">Comments</div>
+  <div class="card">
+    <textarea placeholder="Feedback, substitutions, notes..."></textarea>
+  </div>
+
+</div>
+
+<!-- Sticky Footer -->
+<div class="sticky-footer">
+  <button class="submit-btn">Submit (Demo)</button>
+</div>
+
+<script>
+/* -------------------------
+   Menu Data
+--------------------------*/
+const menuItems = [
+  { name: "Apple Pie Breakfast Bar", price: 5, options: [] },
+  { name: "Canadian Bacon & Cheddar Sandwich", price: 5, options: ["Egg / No Egg", "Croissant / Muffin"] },
+  { name: "Sausage & Cheddar Sandwich", price: 5, options: ["Egg / No Egg", "Croissant / Muffin"] },
+  { name: "Cinnamon Coffee Cake", price: 5, options: [] },
+  { name: "Chicken Caesar", price: 9, options: ["Wrap / Salad"] },
+  { name: "Pepperoni Pizza Rolls", price: 9, options: [] },
+  { name: "Ham & Turkey Club", price: 9, options: ["Wrap / Sub"] },
+  { name: "Chicken Salad", price: 9, options: ["Classic / Dill", "Wrap / Sub"] },
+  { name: "Ham Asparagus Mushroom Swiss Casserole", price: 6, options: [] },
+  { name: "Banana Oatmeal Breakfast Cake", price: 6, options: [] },
+  { name: "Chicken Spinach & Mushroom Pasta", price: 9, options: [] },
+  { name: "Asian Crunch Salad", price: 9, options: [] },
+  { name: "Pesto Chicken & Potatoes", price: 9, options: [] },
+  { name: "Jamaican Curry Chicken & Rice", price: 9, options: [] },
+  { name: "Chicken Lo Mein", price: 9, options: [] },
+  { name: "Lasagna Soup", price: 6, options: [] },
+  { name: "Take & Bake: Chicken Tamale Casserole", price: 25, options: [] },
+  { name: "Take & Bake: Tuna Noodle Casserole", price: 25, options: [] },
+  { name: "Take & Bake: Garlic Bread", price: 8, options: [] },
+  { name: "Take & Bake: Herb Chicken & Mushrooms", price: 25, options: [] },
+  { name: "Take & Bake: Balsamic Chicken Bake", price: 25, options: [] },
+  { name: "Gochujang Broccoli (Side)", price: 15, options: [] },
+  { name: "Parmesan Asparagus & Tomatoes (Side)", price: 15, options: [] },
+  { name: "Sesame Garlic Sugar Snap Peas (Side)", price: 15, options: [] },
+  { name: "Herb Roasted Potatoes (Side)", price: 15, options: [] },
+];
+
+/* -------------------------
+   Render menu AFTER DOM loads
+--------------------------*/
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("meal-container");
+
+  menuItems.forEach((item, index) => {
+    const card = document.createElement("div");
+    card.className = "meal-card";
+
+    let html = `
+      <div class="meal-title">${item.name}</div>
+      <div class="price">$${item.price}</div>
+
+      <div class='qty-box'>
+        <button class='qty-btn' onclick='changeQty(${index}, -1)'>−</button>
+        <input id='qty-${index}' class='qty-input' type='number' min='0' value='0'>
+        <button class='qty-btn' onclick='changeQty(${index}, 1)'>+</button>
+      </div>
+    `;
+
+    // Options (pills)
+    item.options.forEach((optionGroup, optIndex) => {
+      const options = optionGroup.split("/");
+      html += `
+        <div class="options-row">
+          <div class="option-label">${optionGroup}</div>
+          <div class="pill-row" id="opt-${index}-${optIndex}">
+            ${options
+              .map(
+                o =>
+                  `<div class="pill" onclick="selectPill(${index}, ${optIndex}, this)">${o.trim()}</div>`
+              )
+              .join("")}
+          </div>
+        </div>
+      `;
+    });
+
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+});
+
+/* -------------------------
+   Interaction Handlers
+--------------------------*/
+function changeQty(index, delta) {
+  const input = document.getElementById(`qty-${index}`);
+  let value = parseInt(input.value) || 0;
+  value = Math.max(0, value + delta);
+  input.value = value;
+}
+
+function selectPill(mealIndex, optIndex, pillEl) {
+  const row = document.getElementById(`opt-${mealIndex}-${optIndex}`);
+  [...row.children].forEach(p => p.classList.remove("selected"));
+  pillEl.classList.add("selected");
+}
+</script>
+
+</body>
+</html>
