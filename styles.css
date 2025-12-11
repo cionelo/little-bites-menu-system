@@ -149,20 +149,30 @@ input, textarea {
   margin-bottom: 8px;
 }
 
+/* Full working dropdown description (fixed height clipping issue) */
 .desc-content {
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.45;
   background: #f8f8f8;
   border-radius: 10px;
-  padding: 10px;
+  padding: 12px;
   margin-bottom: 12px;
-  display: none; /* initially hidden */
+
+  /* Fix: allow full expansion */
+  display: none;
+  max-height: none;
+  overflow: visible;
+
+  /* Fix for iOS Safari clipping inside flex/relative containers */
+  position: relative;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
-.desc-content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.25s ease;
-}
+
+/* OPTIONAL: If using animated .open class, include this */
+/* .desc-content.open {
+  display: block;
+} */
 
 .desc-content.open {
   max-height: 200px; /* enough room */
