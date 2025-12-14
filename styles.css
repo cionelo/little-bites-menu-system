@@ -117,6 +117,21 @@ input, textarea {
   color: white;
 }
 
+.instance-options {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 12px;
+  border-left: 3px solid var(--blue);
+}
+
+.instance-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--blue);
+  margin-bottom: 6px;
+}
+
 .sticky-footer {
   position: fixed;
   bottom: 0;

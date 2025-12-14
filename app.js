@@ -2,7 +2,7 @@
 // CONFIG
 // **************************************
 // SET THIS TO YOUR APPS SCRIPT DEPLOYMENT URL:
-const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwl9E0UOmBwfO3hGnBrlJOAoSuOKysN2y3ST-TmRvN29zsZ1F-_3zSXiREWMhZn7rAOLA/exec";
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbySs_eTXk7SeLBT-Q8suDoRO2F1V7GJBEwGZLnCbEqspGQ_CPAJj1XMF5Pa_LPBE_Xv/exec";
 
 let MENU = [];
 
@@ -64,24 +64,10 @@ function renderMenu() {
     `;
 
     // =====================================
-    // OPTIONS (PILL SELECTORS)
+    // OPTIONS (PILL SELECTORS) - CONTAINER
     // =====================================
     if (item.options) {
-      const groups = item.options.split("|");
-
-      groups.forEach((g, optIndex) => {
-        html += `
-          <div class="pill-row" id="opt-${index}-${optIndex}">
-            ${g
-              .split("/")
-              .map(
-                o =>
-                  `<div class="pill" onclick="selectPill(${index}, ${optIndex}, this)">${o.trim()}</div>`
-              )
-              .join("")}
-          </div>
-        `;
-      });
+      html += `<div id="options-container-${index}"></div>`;
     }
 
     card.innerHTML = html;
@@ -97,14 +83,61 @@ function changeQty(index, delta) {
   let value = parseInt(input.value) || 0;
   value = Math.max(0, value + delta);
   input.value = value;
+
+  // Rebuild option selectors based on new quantity
+  renderOptionsForItem(index, value);
+
   updateSubtotal();
+}
+
+// **************************************
+// RENDER OPTIONS FOR SPECIFIC ITEM BASED ON QTY
+// **************************************
+function renderOptionsForItem(itemIndex, qty) {
+  const item = MENU[itemIndex];
+  const container = document.getElementById(`options-container-${itemIndex}`);
+
+  if (!container || !item.options) return;
+
+  container.innerHTML = "";
+
+  if (qty === 0) return; // No options needed if qty is 0
+
+  const groups = item.options.split("|");
+
+  // Create option selectors for each instance
+  for (let instance = 0; instance < qty; instance++) {
+    const instanceDiv = document.createElement("div");
+    instanceDiv.className = "instance-options";
+    instanceDiv.innerHTML = `<div class="instance-label">Item #${instance + 1}</div>`;
+
+    groups.forEach((g, optIndex) => {
+      const pillRow = document.createElement("div");
+      pillRow.className = "pill-row";
+      pillRow.id = `opt-${itemIndex}-${instance}-${optIndex}`;
+
+      g.split("/").forEach(option => {
+        const pill = document.createElement("div");
+        pill.className = "pill";
+        pill.innerText = option.trim();
+        pill.onclick = function() {
+          selectPill(itemIndex, instance, optIndex, this);
+        };
+        pillRow.appendChild(pill);
+      });
+
+      instanceDiv.appendChild(pillRow);
+    });
+
+    container.appendChild(instanceDiv);
+  }
 }
 
 // **************************************
 // PILL OPTION SELECTOR
 // **************************************
-function selectPill(mealIndex, optIndex, pillEl) {
-  const row = document.getElementById(`opt-${mealIndex}-${optIndex}`);
+function selectPill(mealIndex, instance, optIndex, pillEl) {
+  const row = document.getElementById(`opt-${mealIndex}-${instance}-${optIndex}`);
   [...row.children].forEach(p => p.classList.remove("selected"));
   pillEl.classList.add("selected");
 }
@@ -151,24 +184,39 @@ function collectItems() {
     const qty = parseInt(document.getElementById(`qty-${i}`).value) || 0;
     if (qty === 0) return;
 
-    let selectedOptions = [];
+    let instances = [];
 
     if (item.options) {
       const groups = item.options.split("|");
-      groups.forEach((_, optIndex) => {
-        const row = document.getElementById(`opt-${i}-${optIndex}`);
-        const selected = [...row.children].find(p =>
-          p.classList.contains("selected")
-        );
-        selectedOptions.push(selected ? selected.innerText : null);
-      });
+
+      // Collect options for each instance
+      for (let instance = 0; instance < qty; instance++) {
+        let instanceOptions = [];
+
+        groups.forEach((_, optIndex) => {
+          const row = document.getElementById(`opt-${i}-${instance}-${optIndex}`);
+          if (row) {
+            const selected = [...row.children].find(p =>
+              p.classList.contains("selected")
+            );
+            instanceOptions.push(selected ? selected.innerText : null);
+          }
+        });
+
+        instances.push({ options: instanceOptions });
+      }
+    } else {
+      // No options - just create empty instances
+      for (let instance = 0; instance < qty; instance++) {
+        instances.push({ options: [] });
+      }
     }
 
     output.push({
       name: item.name,
       qty,
       price: item.price,
-      selectedOptions,
+      instances,
     });
   });
 
@@ -217,16 +265,14 @@ function submitOrder() {
     if (el) el.value = "";
   });
 
-  // Reset quantities
+  // Reset quantities and options
   MENU.forEach((_, i) => {
     const qty = document.getElementById(`qty-${i}`);
     if (qty) qty.value = 0;
 
-    // Reset pills
-    const pillRows = document.querySelectorAll(`[id^="opt-${i}-"]`);
-    pillRows.forEach(row => {
-      [...row.children].forEach(p => p.classList.remove("selected"));
-    });
+    // Clear options container
+    const optionsContainer = document.getElementById(`options-container-${i}`);
+    if (optionsContainer) optionsContainer.innerHTML = "";
 
     // Collapse descriptions if open
     const desc = document.getElementById(`desc-${i}`);
