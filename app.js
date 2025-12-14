@@ -179,6 +179,13 @@ function collectItems() {
 // SUBMIT ORDER (POST to Google Sheets)
 // **************************************
 function submitOrder() {
+  const btn = document.querySelector(".submit-btn");
+
+  if (btn.disabled) return; // safety guard
+
+  btn.disabled = true;
+  btn.innerText = "Submitting order…";
+
   const payload = {
     name: document.getElementById("name").value,
     phone: document.getElementById("phone").value,
@@ -193,7 +200,50 @@ function submitOrder() {
     method: "POST",
     body: JSON.stringify(payload),
   })
-    .then(() => alert("Order submitted!"))
-    .catch(err => alert("Error submitting order. Check console."));
+    .then(res => {
+      if (!res.ok) throw new Error("Submit failed");
+      handleSuccessfulSubmit();
+    })
+    .catch(err => {
+      console.error(err);
+      btn.disabled = false;
+      btn.innerText = "Submit Order";
+      alert("There was an issue submitting your order. Please try again.");
+    });
+    function handleSuccessfulSubmit() {
+  // Clear text fields
+  ["name", "phone", "delivery", "email", "buddy", "comments"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  // Reset quantities
+  MENU.forEach((_, i) => {
+    const qty = document.getElementById(`qty-${i}`);
+    if (qty) qty.value = 0;
+
+    // Reset pills
+    const pillRows = document.querySelectorAll(`[id^="opt-${i}-"]`);
+    pillRows.forEach(row => {
+      [...row.children].forEach(p => p.classList.remove("selected"));
+    });
+
+    // Collapse descriptions if open
+    const desc = document.getElementById(`desc-${i}`);
+    if (desc) desc.style.display = "none";
+  });
+
+  // Reset subtotal
+  document.getElementById("subtotal").innerText = "$0";
+
+  // Redirect / confirmation state
+  document.querySelector(".container").innerHTML = `
+    <div class="card" style="text-align:center;">
+      <h2 style="color:#006dab;">Order submitted successfully</h2>
+      <p>Thank you! Your order has been received.</p>
+    </div>
+  `;
+}
+
 }
 
