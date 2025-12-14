@@ -282,6 +282,10 @@ function submitOrder() {
   // Reset subtotal
   document.getElementById("subtotal").innerText = "$0";
 
+  // Hide the sticky footer (submit button)
+  const footer = document.querySelector(".sticky-footer");
+  if (footer) footer.style.display = "none";
+
   // Redirect / confirmation state
   document.querySelector(".container").innerHTML = `
     <div class="card" style="text-align:center;">
