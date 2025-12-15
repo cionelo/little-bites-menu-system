@@ -3,7 +3,7 @@
  *
  * PURPOSE:
  * This Apps Script serves as the backend for the Little Bites online menu ordering system.
- * It connects to a Google Spreadsheet with two main tabs: "Menu" and "Orders-2".
+ * It connects to a Google Spreadsheet with multiple tabs for menu, orders, and kitchen prep.
  *
  * SPREADSHEET STRUCTURE:
  * - Menu Sheet: Contains menu items with columns: name, price, description, options
@@ -14,20 +14,31 @@
  * - Orders-2 Sheet: Kitchen prep format with item counts and formatted options
  *   - Format: item columns + "{item name} - options" columns
  *   - Options display: "(opt1, opt2), (opt1, opt2)" for easy kitchen reading
+ *   - Totals row: Item counts (SUM formulas) + aggregated option counts
+ *     Example: "4x(Wrap), 1x(Salad)" - sorted by count, descending
+ *
+ * - Kitchen Prep Summary Sheet: Simplified view with abbreviated options for quick kitchen reference
+ *   - Auto-generated from Orders-2 totals row
+ *   - Format: ITEM | QUANTITY | OPTIONS BREAKDOWN
+ *   - Abbreviates options: "5x(E,CR), 3x(NE,MF)" instead of "5x(egg, croissant), 3x(no egg, muffin)"
  *
  * KEY FEATURES:
  * - GET endpoint: Returns menu data as JSON
  * - POST endpoint: Receives orders and writes to both Orders and Orders-2 sheets
  * - Dynamic header generation: Orders-2 headers auto-update based on Menu sheet
  * - Options formatting: Groups instance options as "(option1, option2), (option1, option2)"
+ * - Totals aggregation: Counts option tuples across all orders for kitchen prep
+ * - Kitchen shorthand: Auto-abbreviates options for faster kitchen reading
  * - Archive & clear functionality: Built-in menu tool for end-of-day operations
  *
  * RECENT UPDATES:
  * - Changed Orders-2 from multiple option columns to single options column per item
  * - Options now formatted as comma-separated tuples for kitchen readability
  * - Frontend validation ensures all options are selected before submission
+ * - Added totals row aggregation for option counts (e.g., "4x(Wrap), 1x(Salad)")
+ * - Added Kitchen Prep Summary generator with abbreviated options (e.g., "5x(E,CR)")
  *
- * @version 2.0
+ * @version 2.2
  * @date 2025-12-15
  */
 
@@ -244,17 +255,25 @@ function updateTotalsRow(sheet) {
   const currentLastRow = sheet.getLastRow();
   const totalsRow = currentLastRow + 1;
 
-  // Build totals formulas
-  const totalsData = headers.map((header, idx) => {
-    const colLetter = columnToLetter(idx + 1);
+  // Get all data rows for aggregating options
+  const dataRange = currentLastRow > 1 ? sheet.getRange(2, 1, currentLastRow - 1, headers.length).getValues() : [];
 
+  // Build totals data
+  const totalsData = headers.map((header, idx) => {
     // Skip formula for text columns
     if (idx < 5) {
       return idx === 0 ? "TOTALS" : "";
     }
 
-    // SUM formula for item/option columns (skip header row, exclude totals row)
-    return `=SUM(${colLetter}2:${colLetter}${currentLastRow})`;
+    // Check if this is an options column
+    if (header.includes(" - options")) {
+      // Aggregate option counts across all orders
+      return aggregateOptions(dataRange, idx);
+    } else {
+      // Standard numeric sum for item count columns
+      const colLetter = columnToLetter(idx + 1);
+      return `=SUM(${colLetter}2:${colLetter}${currentLastRow})`;
+    }
   });
 
   // Write totals row at the very bottom
@@ -262,6 +281,40 @@ function updateTotalsRow(sheet) {
   sheet.getRange(totalsRow, 1, 1, headers.length)
     .setFontWeight("bold")
     .setBackground("#f3f3f3");
+}
+
+// **************************************
+// AGGREGATE OPTIONS FOR TOTALS ROW
+// **************************************
+function aggregateOptions(dataRows, columnIndex) {
+  const optionCounts = {}; // { "(Wrap)": 4, "(Salad)": 1 }
+
+  // Iterate through all data rows
+  dataRows.forEach(row => {
+    const optionsCell = row[columnIndex];
+
+    if (!optionsCell || optionsCell === "") return; // Skip empty cells
+
+    // Split by ", " to get individual option tuples
+    // Example: "(Wrap), (Wrap), (Salad)" -> ["(Wrap)", "(Wrap)", "(Salad)"]
+    const optionTuples = optionsCell.toString().split(", ");
+
+    optionTuples.forEach(tuple => {
+      const trimmed = tuple.trim();
+      if (trimmed === "") return; // Skip empty strings
+
+      // Count this tuple
+      optionCounts[trimmed] = (optionCounts[trimmed] || 0) + 1;
+    });
+  });
+
+  // Convert to array and sort by count (descending)
+  const sortedOptions = Object.entries(optionCounts)
+    .sort((a, b) => b[1] - a[1]) // Sort by count, highest first
+    .map(([tuple, count]) => `${count}x${tuple}`)
+    .join(", ");
+
+  return sortedOptions || ""; // Return empty string if no options
 }
 
 
@@ -329,6 +382,7 @@ function onOpen() {
   ui.createMenu('📋 Little Bites Tools')
     .addItem('🔄 Archive & Clear Orders', 'archiveAndClear')
     .addItem('🛠️ Rebuild Orders-2 Headers', 'rebuildOrders2Headers')
+    .addItem('👨‍🍳 Generate Kitchen Prep Summary', 'generateKitchenSummary')
     .addToUi();
 }
 
@@ -339,4 +393,258 @@ function rebuildOrders2Headers() {
   const sheet = getOrCreateOrders2Sheet();
   initializeOrders2Headers(sheet);
   SpreadsheetApp.getUi().alert("✅ Orders-2 headers have been rebuilt based on current Menu.");
+}
+
+// **************************************
+// GENERATE KITCHEN PREP SUMMARY
+// **************************************
+/**
+ * Creates a simplified "Kitchen Prep Summary" sheet from Orders-2 totals row.
+ *
+ * PURPOSE:
+ * Provides kitchen staff with an easy-to-read summary using abbreviated options
+ * for faster prep and reduced reading time during busy service.
+ *
+ * PROCESS:
+ * 1. Reads TOTALS row from Orders-2 sheet
+ * 2. Extracts item counts and options strings
+ * 3. Abbreviates options using formatKitchenShorthand()
+ * 4. Generates clean 3-column table: ITEM | QUANTITY | OPTIONS BREAKDOWN
+ *
+ * OUTPUT FORMAT:
+ * - Items with options: "5x(E,CR), 3x(NE,MF)"
+ * - Items without options: "—"
+ *
+ * REGENERATION:
+ * - Can be regenerated at any time from current Orders-2 data
+ * - Not included in archive logic (always generate fresh as needed)
+ * - Automatically clears and recreates sheet on each run
+ *
+ * TRIGGERED BY:
+ * User clicking "📋 Little Bites Tools" → "👨‍🍳 Generate Kitchen Prep Summary"
+ */
+function generateKitchenSummary() {
+  const ss = SpreadsheetApp.getActive();
+  const orders2Sheet = ss.getSheetByName("Orders-2");
+
+  if (!orders2Sheet) {
+    SpreadsheetApp.getUi().alert("⚠️ Orders-2 sheet not found. Please submit at least one order first.");
+    return;
+  }
+
+  // Get or create Kitchen Prep Summary sheet
+  let summarySheet = ss.getSheetByName("Kitchen Prep Summary");
+  if (summarySheet) {
+    summarySheet.clear(); // Clear existing data
+  } else {
+    summarySheet = ss.insertSheet("Kitchen Prep Summary");
+  }
+
+  // Get Orders-2 data
+  const lastRow = orders2Sheet.getLastRow();
+  if (lastRow < 2) {
+    SpreadsheetApp.getUi().alert("⚠️ No orders found in Orders-2 sheet.");
+    return;
+  }
+
+  const headers = orders2Sheet.getRange(1, 1, 1, orders2Sheet.getLastColumn()).getValues()[0];
+
+  // Find TOTALS row
+  let totalsRowIndex = -1;
+  for (let i = lastRow; i >= 2; i--) {
+    const cellValue = orders2Sheet.getRange(i, 1).getValue();
+    if (cellValue === "TOTALS") {
+      totalsRowIndex = i;
+      break;
+    }
+  }
+
+  if (totalsRowIndex === -1) {
+    SpreadsheetApp.getUi().alert("⚠️ TOTALS row not found in Orders-2 sheet.");
+    return;
+  }
+
+  // Get totals row data
+  const totalsData = orders2Sheet.getRange(totalsRowIndex, 1, 1, headers.length).getValues()[0];
+
+  // Build kitchen-friendly summary
+  const summaryData = [];
+  summaryData.push(["ITEM", "QUANTITY", "OPTIONS BREAKDOWN"]); // Headers
+
+  for (let i = 5; i < headers.length; i++) { // Start after base columns (Date, Name, Phone, Delivery, Email)
+    const header = headers[i];
+    const value = totalsData[i];
+
+    // Skip if no value
+    if (!value || value === "" || value === 0) continue;
+
+    // Check if this is an options column
+    if (header.includes(" - options")) {
+      // This is an options column - format it with shorthand
+      const itemName = header.replace(" - options", "");
+      const shorthand = formatKitchenShorthand(value);
+
+      // Find the corresponding item count
+      const itemIndex = headers.indexOf(itemName);
+      const itemCount = itemIndex !== -1 ? totalsData[itemIndex] : "";
+
+      summaryData.push([itemName, itemCount, shorthand]);
+    } else {
+      // This is a regular item without options
+      // Check if there's a corresponding options column
+      const optionsColName = `${header} - options`;
+      const hasOptionsCol = headers.includes(optionsColName);
+
+      if (!hasOptionsCol) {
+        // Item without options
+        summaryData.push([header, value, "—"]);
+      }
+      // If it has options column, it will be handled in the options block above
+    }
+  }
+
+  // Write to summary sheet
+  if (summaryData.length > 1) { // More than just headers
+    summarySheet.getRange(1, 1, summaryData.length, 3).setValues(summaryData);
+
+    // Format header row
+    summarySheet.getRange(1, 1, 1, 3)
+      .setFontWeight("bold")
+      .setBackground("#4a86e8")
+      .setFontColor("#ffffff")
+      .setHorizontalAlignment("center");
+
+    // Format data rows
+    summarySheet.getRange(2, 1, summaryData.length - 1, 3)
+      .setVerticalAlignment("top");
+
+    // Set column widths
+    summarySheet.setColumnWidth(1, 200); // Item name
+    summarySheet.setColumnWidth(2, 100); // Quantity
+    summarySheet.setColumnWidth(3, 400); // Options breakdown
+
+    // Add borders
+    summarySheet.getRange(1, 1, summaryData.length, 3)
+      .setBorder(true, true, true, true, true, true);
+
+    SpreadsheetApp.getUi().alert("✅ Kitchen Prep Summary generated successfully!\n\nCheck the 'Kitchen Prep Summary' tab.");
+  } else {
+    SpreadsheetApp.getUi().alert("⚠️ No items found to summarize.");
+  }
+}
+
+// **************************************
+// FORMAT KITCHEN SHORTHAND
+// **************************************
+/**
+ * Converts full option strings into abbreviated kitchen shorthand.
+ *
+ * INPUT EXAMPLE:
+ * "5x(egg, croissant), 3x(no egg, muffin), 1x(egg, bagel)"
+ *
+ * OUTPUT EXAMPLE:
+ * "5x(E,CR), 3x(NE,MF), 1x(E,BG)"
+ *
+ * ALGORITHM:
+ * 1. Splits input by ", " to get individual count+tuple pairs
+ * 2. Uses regex to extract count and options list
+ * 3. Calls abbreviate() on each option within tuple
+ * 4. Rejoins with commas (no spaces between options in tuple)
+ * 5. Returns final abbreviated string
+ *
+ * @param {string} optionsString - Aggregated options from Orders-2 totals
+ * @return {string} Abbreviated shorthand for kitchen
+ */
+function formatKitchenShorthand(optionsString) {
+  if (!optionsString || optionsString === "") return "—";
+
+  // Input: "5x(egg, croissant), 3x(no egg, muffin), 1x(egg, bagel)"
+  // Output: "5x(E,CR), 3x(NE,MF), 1x(E,BG)"
+
+  // Split by ", " to get individual count+tuple pairs
+  const parts = optionsString.toString().split(", ");
+
+  const shorthandParts = parts.map(part => {
+    // Match pattern: "5x(egg, croissant)"
+    const match = part.match(/^(\d+)x\((.+)\)$/);
+    if (!match) return part; // Return as-is if doesn't match
+
+    const count = match[1];
+    const optionsList = match[2];
+
+    // Abbreviate each option
+    const abbreviatedOptions = optionsList.split(", ").map(opt => abbreviate(opt)).join(",");
+
+    return `${count}x(${abbreviatedOptions})`;
+  });
+
+  return shorthandParts.join(", ");
+}
+
+// **************************************
+// ABBREVIATE OPTION TEXT
+// **************************************
+/**
+ * Abbreviates individual option text into 2-3 letter codes.
+ *
+ * ABBREVIATION STRATEGY:
+ * 1. Checks predefined abbreviations dictionary first (case-insensitive)
+ * 2. Falls back to first 2 uppercase letters for unknown options
+ *
+ * COMMON ABBREVIATIONS:
+ * - egg → E, no egg → NE
+ * - croissant → CR, muffin → MF, bagel → BG
+ * - wrap → W, salad → S, salad bowl → SB
+ * - chicken → CH, no chicken → NCH
+ * - dressing → D, no dressing → ND
+ * - hot → H, iced → I
+ * - small → SM, medium → MD, large → LG
+ * - sugar → SU, no sugar → NS
+ *
+ * EXTENSIBILITY:
+ * Add new abbreviations to the abbreviations object as menu grows.
+ *
+ * @param {string} text - Full option text (e.g., "croissant")
+ * @return {string} Abbreviated code (e.g., "CR")
+ */
+function abbreviate(text) {
+  if (!text) return "";
+
+  const trimmed = text.trim();
+
+  // Common abbreviations
+  const abbreviations = {
+    "egg": "E",
+    "no egg": "NE",
+    "croissant": "CR",
+    "muffin": "MF",
+    "bagel": "BG",
+    "wrap": "W",
+    "salad": "S",
+    "salad bowl": "SB",
+    "chicken": "CH",
+    "no chicken": "NCH",
+    "dressing": "D",
+    "no dressing": "ND",
+    "hot": "H",
+    "iced": "I",
+    "small": "SM",
+    "medium": "MD",
+    "large": "LG",
+    "sugar": "SU",
+    "no sugar": "NS"
+  };
+
+  // Check if exact match exists
+  const lowerText = trimmed.toLowerCase();
+  if (abbreviations[lowerText]) {
+    return abbreviations[lowerText];
+  }
+
+  // Fallback: Take first 2-3 letters and uppercase
+  if (trimmed.length <= 3) {
+    return trimmed.toUpperCase();
+  } else {
+    return trimmed.substring(0, 2).toUpperCase();
+  }
 }
