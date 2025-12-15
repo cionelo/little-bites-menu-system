@@ -1,3 +1,46 @@
+/**
+ * Little Bites Menu System - Styles
+ *
+ * PURPOSE:
+ * Complete styling for the Little Bites online menu ordering system.
+ * Implements brand colors, responsive layout, and interactive animations.
+ *
+ * DESIGN SYSTEM:
+ * - Primary color: #006dab (blue)
+ * - Light accent: #E7F3FB
+ * - Border radius: 18px (cards), 28px (pills)
+ * - Font family: Poppins, Nunito (Canva Sans equivalents)
+ *
+ * KEY COMPONENTS:
+ * 1. Layout
+ *    - Max-width 650px container for readability
+ *    - Sticky footer with submit button
+ *    - Card-based design with soft shadows
+ *
+ * 2. Menu Cards
+ *    - Meal title, price, description dropdown
+ *    - Quantity controls (+/- buttons)
+ *    - Per-instance option selectors (pills)
+ *
+ * 3. Interactive Elements
+ *    - Quantity buttons: Hover inverts colors, active scales down
+ *    - Pills: Hover lifts with border, selected gets blue background
+ *    - Submit button: Hover lifts, active presses, submitting pulses
+ *
+ * 4. Animations
+ *    - All transitions: 0.15-0.2s ease timing
+ *    - Transform effects: translateY, scale for press feedback
+ *    - Pulse animation for submit button during processing
+ *
+ * RECENT UPDATES:
+ * - Added comprehensive button and pill animations
+ * - Enhanced submit button with hover, active, and submitting states
+ * - Improved visual feedback with shadows and transforms
+ *
+ * @version 2.0
+ * @date 2025-12-15
+ */
+
 /* Little Bites Online Menu */
 
 :root {
@@ -87,6 +130,18 @@ input, textarea {
   border: 1px solid var(--blue);
   color: var(--blue);
   font-size: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.qty-btn:hover {
+  background: var(--blue);
+  color: white;
+  transform: scale(1.05);
+}
+
+.qty-btn:active {
+  transform: scale(0.95);
 }
 
 .qty-input {
@@ -110,11 +165,25 @@ input, textarea {
   background: var(--light);
   color: var(--blue);
   cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.pill:hover:not(.selected) {
+  background: #d0e8f7;
+  transform: translateY(-1px);
+  border-color: var(--blue);
+}
+
+.pill:active {
+  transform: scale(0.96);
 }
 
 .pill.selected {
   background: var(--blue);
   color: white;
+  border-color: var(--blue);
+  box-shadow: 0 2px 8px rgba(0, 109, 171, 0.3);
 }
 
 .instance-options {
@@ -150,6 +219,40 @@ input, textarea {
   border: none;
   font-size: 18px;
   margin-top: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 109, 171, 0.3);
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #005a8f;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 109, 171, 0.4);
+}
+
+.submit-btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 2px 6px rgba(0, 109, 171, 0.2);
+}
+
+.submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.submit-btn.submitting {
+  background: #4a86e8;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 :last-child
 .subtotal-row {

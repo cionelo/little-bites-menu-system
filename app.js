@@ -1,3 +1,56 @@
+/**
+ * Little Bites Menu System - Frontend JavaScript
+ *
+ * PURPOSE:
+ * Handles all client-side functionality for the online menu ordering system.
+ * Fetches menu from Google Sheets backend, renders interactive menu cards,
+ * manages item quantities and options, validates selections, and submits orders.
+ *
+ * CORE FUNCTIONALITY:
+ * 1. Menu Loading & Rendering
+ *    - Fetches menu data from backend on page load
+ *    - Dynamically generates menu cards with prices, descriptions, and options
+ *
+ * 2. Quantity Management
+ *    - +/- buttons to adjust item quantities
+ *    - Automatically generates option selectors per instance
+ *    - Real-time subtotal calculation
+ *
+ * 3. Options System (Per-Instance)
+ *    - Each ordered item gets individual option selectors (Item #1, Item #2, etc.)
+ *    - Pill-style selectors for each option group
+ *    - Example: 3 breakfast sandwiches = 3 sets of option selectors
+ *
+ * 4. Validation
+ *    - Ensures ALL options are selected before submission
+ *    - Displays helpful error: "Please pick an option for {item} (Item #{n})"
+ *
+ * 5. Order Submission
+ *    - Collects all items with their instance-specific options
+ *    - POSTs to backend with structured payload
+ *    - Visual feedback with button animations (pulse, press effects)
+ *
+ * DATA STRUCTURE:
+ * Menu items are sent with instances array:
+ * {
+ *   name: "breakfast sandwich",
+ *   qty: 3,
+ *   instances: [
+ *     { options: ["egg", "croissant"] },
+ *     { options: ["egg", "croissant"] },
+ *     { options: ["no egg", "muffin"] }
+ *   ]
+ * }
+ *
+ * RECENT UPDATES:
+ * - Added comprehensive validation to prevent submission without option selections
+ * - Enhanced UI with button press animations and hover effects
+ * - Added pulsing animation during order submission
+ *
+ * @version 2.0
+ * @date 2025-12-15
+ */
+
 // **************************************
 // CONFIG
 // **************************************
@@ -175,6 +228,39 @@ function updateSubtotal() {
 }
 
 // **************************************
+// VALIDATE ALL OPTIONS ARE SELECTED
+// **************************************
+function validateOrderOptions() {
+  for (let i = 0; i < MENU.length; i++) {
+    const item = MENU[i];
+    const qty = parseInt(document.getElementById(`qty-${i}`).value) || 0;
+
+    if (qty === 0) continue; // Skip items not ordered
+
+    if (item.options) {
+      const groups = item.options.split("|");
+
+      // Check each instance for missing selections
+      for (let instance = 0; instance < qty; instance++) {
+        for (let optIndex = 0; optIndex < groups.length; optIndex++) {
+          const row = document.getElementById(`opt-${i}-${instance}-${optIndex}`);
+          if (row) {
+            const selected = [...row.children].find(p =>
+              p.classList.contains("selected")
+            );
+            if (!selected) {
+              return `Please pick an option for ${item.name} (Item #${instance + 1}) to submit your order.`;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return null; // No validation errors
+}
+
+// **************************************
 // BUILD ORDER DATA FOR SUBMISSION
 // **************************************
 function collectItems() {
@@ -231,7 +317,15 @@ function submitOrder() {
 
   if (btn.disabled) return; // safety guard
 
+  // Validate all options are selected before submitting
+  const validationError = validateOrderOptions();
+  if (validationError) {
+    alert(validationError);
+    return;
+  }
+
   btn.disabled = true;
+  btn.classList.add("submitting");
   btn.innerText = "Submitting order…";
 
   const payload = {
@@ -255,6 +349,7 @@ function submitOrder() {
     .catch(err => {
       console.error(err);
       btn.disabled = false;
+      btn.classList.remove("submitting");
       btn.innerText = "Submit Order";
       alert("There was an issue submitting your order. Please try again.");
     });
