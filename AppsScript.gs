@@ -295,13 +295,31 @@ function aggregateOptions(dataRows, columnIndex) {
 
     if (!optionsCell || optionsCell === "") return; // Skip empty cells
 
-    // Split by ", " to get individual option tuples
-    // Example: "(Wrap), (Wrap), (Salad)" -> ["(Wrap)", "(Wrap)", "(Salad)"]
-    const optionTuples = optionsCell.toString().split(", ");
+    // Split by "), (" pattern to correctly separate complete tuples
+    // Example: "(egg, croissant), (no egg, muffin)" -> ["(egg, croissant)", "(no egg, muffin)"]
+    const optionString = optionsCell.toString().trim();
 
-    optionTuples.forEach(tuple => {
-      const trimmed = tuple.trim();
+    // Split using regex that matches "), (" as the separator
+    // We need to add back the parentheses that get consumed by the split
+    const optionTuples = optionString.split(/\),\s*\(/);
+
+    optionTuples.forEach((tuple, index) => {
+      let trimmed = tuple.trim();
       if (trimmed === "") return; // Skip empty strings
+
+      // Add back the opening parenthesis (except for first element)
+      if (index > 0 && !trimmed.startsWith("(")) {
+        trimmed = "(" + trimmed;
+      }
+
+      // Add back the closing parenthesis (except for last element)
+      if (index < optionTuples.length - 1 && !trimmed.endsWith(")")) {
+        trimmed = trimmed + ")";
+      }
+
+      // Ensure both parentheses are present (for single-element arrays)
+      if (!trimmed.startsWith("(")) trimmed = "(" + trimmed;
+      if (!trimmed.endsWith(")")) trimmed = trimmed + ")";
 
       // Count this tuple
       optionCounts[trimmed] = (optionCounts[trimmed] || 0) + 1;
