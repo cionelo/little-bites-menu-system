@@ -228,6 +228,92 @@ function updateSubtotal() {
 }
 
 // **************************************
+// VALIDATE CUSTOMER INFO
+// **************************************
+function validateCustomerInfo() {
+  const errors = [];
+
+  // Clear any existing error states
+  clearValidationErrors();
+
+  // Name validation
+  const name = document.getElementById("name").value.trim();
+  if (!name) {
+    markFieldAsInvalid("name", "Name is required");
+    errors.push("name");
+  }
+
+  // Phone validation (basic format: at least 10 digits)
+  const phone = document.getElementById("phone").value.trim();
+  const phoneDigits = phone.replace(/\D/g, ''); // Remove non-digits
+  if (!phone) {
+    markFieldAsInvalid("phone", "Phone number is required");
+    errors.push("phone");
+  } else if (phoneDigits.length < 10) {
+    markFieldAsInvalid("phone", "Please enter a valid phone number (at least 10 digits)");
+    errors.push("phone");
+  }
+
+  // Delivery/Pickup validation
+  const delivery = document.getElementById("delivery").value.trim();
+  if (!delivery) {
+    markFieldAsInvalid("delivery", "Please specify Pickup or Office Delivery");
+    errors.push("delivery");
+  }
+
+  // Email validation
+  const email = document.getElementById("email").value.trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email) {
+    markFieldAsInvalid("email", "Email is required");
+    errors.push("email");
+  } else if (!emailRegex.test(email)) {
+    markFieldAsInvalid("email", "Please enter a valid email address");
+    errors.push("email");
+  }
+
+  return errors.length === 0;
+}
+
+// **************************************
+// MARK FIELD AS INVALID (RED BORDER + ERROR MESSAGE)
+// **************************************
+function markFieldAsInvalid(fieldId, message) {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+
+  // Add error class for red border
+  field.classList.add("field-error");
+
+  // Create or update error message
+  let errorMsg = field.parentElement.querySelector(".error-message");
+  if (!errorMsg) {
+    errorMsg = document.createElement("div");
+    errorMsg.className = "error-message";
+    field.parentElement.appendChild(errorMsg);
+  }
+  errorMsg.textContent = message;
+
+  // Add focus listener to clear error when user starts typing
+  field.addEventListener("input", function clearOnInput() {
+    field.classList.remove("field-error");
+    if (errorMsg) errorMsg.remove();
+    field.removeEventListener("input", clearOnInput);
+  }, { once: true });
+}
+
+// **************************************
+// CLEAR ALL VALIDATION ERRORS
+// **************************************
+function clearValidationErrors() {
+  const errorFields = document.querySelectorAll(".field-error");
+  errorFields.forEach(field => field.classList.remove("field-error"));
+
+  const errorMessages = document.querySelectorAll(".error-message");
+  errorMessages.forEach(msg => msg.remove());
+}
+
+// **************************************
 // VALIDATE ALL OPTIONS ARE SELECTED
 // **************************************
 function validateOrderOptions() {
@@ -317,7 +403,18 @@ function submitOrder() {
 
   if (btn.disabled) return; // safety guard
 
-  // Validate all options are selected before submitting
+  // Step 1: Validate customer info (name, phone, delivery, email)
+  if (!validateCustomerInfo()) {
+    // Scroll to first error field for better UX
+    const firstError = document.querySelector(".field-error");
+    if (firstError) {
+      firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+      firstError.focus();
+    }
+    return;
+  }
+
+  // Step 2: Validate all menu options are selected
   const validationError = validateOrderOptions();
   if (validationError) {
     alert(validationError);
@@ -329,12 +426,12 @@ function submitOrder() {
   btn.innerText = "Submitting order…";
 
   const payload = {
-    name: document.getElementById("name").value,
-    phone: document.getElementById("phone").value,
-    delivery: document.getElementById("delivery").value,
-    email: document.getElementById("email").value,
-    buddy: document.getElementById("buddy").value,
-    comments: document.getElementById("comments").value,
+    name: document.getElementById("name").value.trim(),
+    phone: document.getElementById("phone").value.trim(),
+    delivery: document.getElementById("delivery").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    buddy: document.getElementById("buddy").value.trim(),
+    comments: document.getElementById("comments").value.trim(),
     items: collectItems(),
   };
 
