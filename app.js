@@ -15,14 +15,19 @@
  *    - +/- buttons to adjust item quantities
  *    - Automatically generates option selectors per instance
  *    - Real-time subtotal calculation
+ *    - STATE PRESERVATION: When adding/removing quantities, existing option selections are preserved
  *
  * 3. Options System (Per-Instance)
  *    - Each ordered item gets individual option selectors (Item #1, Item #2, etc.)
  *    - Pill-style selectors for each option group
  *    - Example: 3 breakfast sandwiches = 3 sets of option selectors
+ *    - Adding item #2 keeps item #1's selections intact
+ *    - Removing item #3 preserves items #1 and #2
  *
  * 4. Validation
- *    - Ensures ALL options are selected before submission
+ *    - Customer info: Name, phone (10+ digits), delivery method, email (format check)
+ *    - Menu options: Ensures ALL options are selected before submission
+ *    - Visual feedback: Red borders, error messages with auto-clear on input
  *    - Displays helpful error: "Please pick an option for {item} (Item #{n})"
  *
  * 5. Order Submission
@@ -42,13 +47,15 @@
  *   ]
  * }
  *
- * RECENT UPDATES:
- * - Added comprehensive validation to prevent submission without option selections
- * - Enhanced UI with button press animations and hover effects
- * - Added pulsing animation during order submission
+ * RECENT UPDATES (v2.1):
+ * - Multi-option item state preservation (prevents option reset when adjusting quantities)
+ * - Enhanced customer info validation with visual feedback
+ * - Phone validation (minimum 10 digits)
+ * - Email format validation
+ * - Auto-clearing error states on user input
  *
- * @version 2.0
- * @date 2025-12-15
+ * @version 2.1
+ * @date 2026-01-09
  */
 
 // **************************************
@@ -152,11 +159,27 @@ function renderOptionsForItem(itemIndex, qty) {
 
   if (!container || !item.options) return;
 
+  // Store existing selections before clearing
+  const existingSelections = [];
+  const groups = item.options.split("|");
+
+  // Capture current selections for each instance
+  const existingInstances = container.querySelectorAll('.instance-options');
+  existingInstances.forEach((_, instance) => {
+    const instanceSelections = [];
+    groups.forEach((_, optIndex) => {
+      const row = document.getElementById(`opt-${itemIndex}-${instance}-${optIndex}`);
+      if (row) {
+        const selected = [...row.children].find(p => p.classList.contains("selected"));
+        instanceSelections.push(selected ? selected.innerText : null);
+      }
+    });
+    existingSelections.push(instanceSelections);
+  });
+
   container.innerHTML = "";
 
   if (qty === 0) return; // No options needed if qty is 0
-
-  const groups = item.options.split("|");
 
   // Create option selectors for each instance
   for (let instance = 0; instance < qty; instance++) {
@@ -173,6 +196,12 @@ function renderOptionsForItem(itemIndex, qty) {
         const pill = document.createElement("div");
         pill.className = "pill";
         pill.innerText = option.trim();
+
+        // Restore previous selection if this instance existed before
+        if (existingSelections[instance] && existingSelections[instance][optIndex] === option.trim()) {
+          pill.classList.add("selected");
+        }
+
         pill.onclick = function() {
           selectPill(itemIndex, instance, optIndex, this);
         };

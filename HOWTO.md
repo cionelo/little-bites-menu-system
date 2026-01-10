@@ -6,23 +6,24 @@
 2. Name it something like "Little Bites Orders"
 3. Create **three tabs** with these exact names:
    - `Menu`
+   - `orders_json`
    - `Orders`
-   - `Orders-2`
+4. **Optional**: Right-click the `orders_json` tab and select "Hide sheet" (this tab stores backup data)
 
 ## Step 2: Set Up Your Menu Tab
 
 In the **Menu** tab, create these column headers in row 1:
 
-| name | price | description | options |
-|------|-------|-------------|---------|
+| category | name | price | options | description |
+|----------|------|-------|---------|-------------|
 
 **Example menu items:**
 
-| name | price | description | options |
-|------|-------|-------------|---------|
-| breakfast sandwich | 8.50 | Fresh egg on your choice of bread | egg/no egg\|croissant/muffin/bagel |
-| coffee | 3.00 | Freshly brewed coffee | hot/iced\|small/medium/large |
-| salad | 7.00 | Fresh garden salad | chicken/no chicken\|dressing/no dressing |
+| category | name | price | options | description |
+|----------|------|-------|---------|-------------|
+| Breakfast | breakfast sandwich | 8.50 | egg/no egg\|croissant/muffin/bagel | Fresh egg on your choice of bread |
+| Beverages | coffee | 3.00 | hot/iced\|small/medium/large | Freshly brewed coffee |
+| Salads | salad | 7.00 | chicken/no chicken\|dressing/no dressing | Fresh garden salad |
 
 **Options format:**
 - Use `/` to separate choices: `egg/no egg`
@@ -71,8 +72,8 @@ Upload these three files to your web hosting:
    - Add items and select options
    - Click "Submit Order"
 3. Check your Google Sheet:
-   - **Orders** tab: Raw order data
-   - **Orders-2** tab: Kitchen-friendly format
+   - **orders_json** tab: Raw order data (can be hidden)
+   - **Orders** tab: Kitchen-friendly format
 
 ---
 
@@ -80,9 +81,9 @@ Upload these three files to your web hosting:
 
 ### Viewing Orders
 
-- **Orders tab:** See customer details and complete order info
-- **Orders-2 tab:** Kitchen prep view with item counts and options
-- Look at the **TOTALS** row at the bottom for daily summary
+- **Orders tab:** Kitchen prep view with item counts and options
+- **orders_json tab:** Raw customer details and complete order info (typically hidden)
+- Look at the **TOTALS** row at the bottom of Orders tab for daily summary
 
 ### Kitchen Prep Summary (Optional)
 
@@ -97,15 +98,15 @@ For an even simpler kitchen view:
 2. Select **🔄 Archive & Clear Orders**
 3. This will:
    - Create timestamped backups of your data
-   - Clear Orders and Orders-2 tabs (keeps headers)
+   - Clear orders_json and Orders tabs (keeps headers)
    - Keep your Menu intact
 
 ### Updating Menu Items
 
 1. Edit the **Menu** tab (add/remove/change items)
 2. Click **📋 Little Bites Tools** menu
-3. Select **🛠️ Rebuild Orders-2 Headers**
-4. This updates the Orders-2 tab to match your new menu
+3. Select **🛠️ Rebuild Orders Headers**
+4. This updates the Orders tab to match your new menu
 
 ---
 
@@ -116,7 +117,7 @@ For an even simpler kitchen view:
 - Verify Apps Script deployment has "Who has access: Anyone"
 
 **Orders not appearing in sheet:**
-- Make sure tab names are exactly: `Menu`, `Orders`, `Orders-2`
+- Make sure tab names are exactly: `Menu`, `orders_json`, `Orders`
 - Check browser console for errors (press F12)
 
 **Need to redeploy after code changes:**

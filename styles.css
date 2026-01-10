@@ -14,7 +14,7 @@
  * KEY COMPONENTS:
  * 1. Layout
  *    - Max-width 650px container for readability
- *    - Sticky footer with submit button
+ *    - Sticky footer with submit button (mobile-optimized)
  *    - Card-based design with soft shadows
  *
  * 2. Menu Cards
@@ -32,13 +32,25 @@
  *    - Transform effects: translateY, scale for press feedback
  *    - Pulse animation for submit button during processing
  *
- * RECENT UPDATES:
- * - Added comprehensive button and pill animations
- * - Enhanced submit button with hover, active, and submitting states
- * - Improved visual feedback with shadows and transforms
+ * 5. Validation & Error States
+ *    - Red borders and background for invalid fields
+ *    - Animated error messages with slideDown effect
+ *    - Focus states clear errors automatically
  *
- * @version 2.0
- * @date 2025-12-15
+ * MOBILE OPTIMIZATIONS:
+ * - Sticky footer uses left/right positioning for full width
+ * - Box-sizing ensures elements fit within viewport
+ * - Subtotal left-justified with "Tax not included" note
+ * - Submit button centered with max-width constraints
+ *
+ * RECENT UPDATES (v2.1):
+ * - Fixed sticky footer overflow on mobile devices
+ * - Redesigned subtotal layout (left-justified with tax note)
+ * - Added proper box-sizing to prevent horizontal scrolling
+ * - Enhanced customer info validation styling
+ *
+ * @version 2.1
+ * @date 2026-01-09
  */
 
 /* Little Bites Online Menu */
@@ -240,25 +252,58 @@ input.field-error:focus, textarea.field-error:focus {
 .sticky-footer {
   position: fixed;
   bottom: 0;
-  width: 100%;
+  left: 0;
+  right: 0;
   background: white;
-  padding: 16px 22px;
+  padding: 16px 20px;
   border-top: 1px solid #ddd;
+  box-sizing: border-box;
+  max-width: 100vw;
+  overflow: hidden;
+}
+
+.subtotal-container {
+  margin-bottom: 12px;
+}
+
+.subtotal-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.subtotal-label {
+  color: #333;
+}
+
+.subtotal-amount {
+  color: var(--blue);
+}
+
+.tax-note {
+  font-size: 13px;
+  color: #666;
+  font-style: italic;
+  font-weight: 400;
+  margin-top: 2px;
 }
 
 .submit-btn {
   width: 100%;
+  max-width: 100%;
   background: var(--blue);
   color: white;
   padding: 14px;
   border-radius: var(--radius);
   border: none;
   font-size: 18px;
-  margin-top: 12px;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(0, 109, 171, 0.3);
+  box-sizing: border-box;
 }
 
 .submit-btn:hover:not(:disabled) {
@@ -289,12 +334,6 @@ input.field-error:focus, textarea.field-error:focus {
   50% {
     opacity: 0.7;
   }
-}
-:last-child
-.subtotal-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 18px;
 }
 .desc-toggle {
   font-size: 14px;

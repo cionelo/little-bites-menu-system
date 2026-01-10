@@ -10,7 +10,7 @@ A complete online menu ordering system that replaces Google Forms with a polishe
 - [Setup Instructions](#setup-instructions)
 - [How It Works](#how-it-works)
 - [Menu Sheet Format](#menu-sheet-format)
-- [Orders-2 Kitchen Format](#orders-2-kitchen-format)
+- [Orders Kitchen Format](#orders-kitchen-format)
 - [Recent Updates](#recent-updates)
 - [Future Enhancements](#future-enhancements)
 
@@ -24,7 +24,7 @@ The Little Bites Menu System provides a seamless ordering experience for weekly 
 - Submit orders that automatically populate Google Sheets for kitchen prep
 
 **Key Benefits:**
-- ✅ **Kitchen-friendly**: Orders-2 sheet shows exactly what to prepare in easy-to-read format
+- ✅ **Kitchen-friendly**: Orders sheet shows exactly what to prepare in easy-to-read format
 - ✅ **Per-instance options**: Each item gets individual customization (e.g., 3 sandwiches can have different toppings)
 - ✅ **Validation**: Prevents incomplete orders with helpful error messages
 - ✅ **Dynamic**: Menu updates automatically from Google Sheets
@@ -62,8 +62,8 @@ The Little Bites Menu System provides a seamless ordering experience for weekly 
 │ Google Sheets   │
 │                 │
 │  - Menu         │
+│  - orders_json  │
 │  - Orders       │
-│  - Orders-2     │
 └─────────────────┘
 ```
 
@@ -88,7 +88,7 @@ little-bites-menu-system/
 | **index.html** | Page structure | Customer info form, dynamic menu area, sticky footer |
 | **styles.css** | Visual styling | Blue theme, card layout, button/pill animations |
 | **app.js** | Client logic | Menu rendering, option management, validation, submission |
-| **AppsScript.gs** | Backend API | Menu fetch, order processing, Orders-2 formatting |
+| **AppsScript.gs** | Backend API | Menu fetch, order processing, Orders formatting |
 
 ---
 
@@ -99,14 +99,14 @@ little-bites-menu-system/
 Create a new Google Sheet with these tabs:
 
 #### **Menu Tab**
-Columns: `name`, `price`, `description`, `options`
+Columns: `category`, `name`, `price`, `options`, `description`
 
 Example:
 ```
-name                | price | description                    | options
---------------------|-------|--------------------------------|-------------------------
-breakfast sandwich  | 8.50  | Fresh egg on your choice...    | egg/no egg|croissant/muffin
-coffee              | 3.00  | Freshly brewed coffee          |
+category   | name                | price | options                        | description
+-----------|---------------------|-------|--------------------------------|-----------------------------
+Breakfast  | breakfast sandwich  | 8.50  | egg/no egg|croissant/muffin    | Fresh egg on your choice...
+Beverages  | coffee              | 3.00  | hot/iced|small/medium/large    | Freshly brewed coffee
 ```
 
 **Options Format:**
@@ -114,11 +114,12 @@ coffee              | 3.00  | Freshly brewed coffee          |
 - Use `|` to separate different option groups
 - Example: `egg/no egg|croissant/muffin` = 2 groups (egg choice + bread choice)
 
-#### **Orders Tab**
+#### **orders_json Tab**
 Auto-generated columns (no setup needed):
 - Date, Name, Phone, Delivery, Email, Items (JSON), Readable Summary, Buddy, Comments
+- **Note**: This tab can be hidden from view as it's primarily for data backup
 
-#### **Orders-2 Tab**
+#### **Orders Tab**
 Auto-generated based on Menu (kitchen prep format)
 
 ### 2. Apps Script Deployment
@@ -178,8 +179,8 @@ If embedding in Squarespace:
    - Success → Confirmation screen
 
 4. **Backend Processing**
-   - Order written to **Orders** tab (raw JSON + readable summary)
-   - Order written to **Orders-2** tab (kitchen prep format)
+   - Order written to **orders_json** tab (raw JSON + readable summary)
+   - Order written to **Orders** tab (kitchen prep format)
    - Totals row updated
 
 ### Data Flow Example
@@ -208,7 +209,7 @@ If embedding in Squarespace:
 }
 ```
 
-**Orders-2 output:**
+**Orders tab output:**
 ```
 breakfast sandwich | breakfast sandwich - options
 3                  | (egg, croissant), (egg, croissant), (no egg, muffin)
@@ -222,10 +223,11 @@ breakfast sandwich | breakfast sandwich - options
 
 | Column | Required | Format | Example |
 |--------|----------|--------|---------|
+| **category** | Optional | Text | `Breakfast`, `Beverages`, `Salads` |
 | **name** | Yes | Text | `breakfast sandwich` |
 | **price** | Yes | Number | `8.50` |
-| **description** | Optional | Text | `Fresh egg on your choice of bread` |
 | **options** | Optional | `choice1/choice2\|group2choice1/group2choice2` | `egg/no egg\|croissant/muffin` |
+| **description** | Optional | Text | `Fresh egg on your choice of bread` |
 
 ### Options Syntax
 
@@ -246,10 +248,10 @@ This creates 3 separate pill rows:
 
 ---
 
-## Orders-2 Kitchen Format
+## Orders Kitchen Format
 
 ### Purpose
-The Orders-2 sheet is optimized for kitchen staff to quickly see what needs to be prepared.
+The Orders sheet is optimized for kitchen staff to quickly see what needs to be prepared.
 
 ### Format
 
@@ -284,9 +286,31 @@ Auto-calculated totals appear at the bottom, updated after each order.
 
 ## Recent Updates
 
+### Version 2.1 (2026-01-09)
+
+#### 🔧 **Multi-Option Item State Preservation**
+- **Fixed**: When adding multiple quantities of items with options, previous selections are now preserved
+- **How it works**: Adding item #2 keeps item #1's options intact, with item #2 showing unselected options
+- **Benefit**: Customers can customize each item instance without losing previous selections
+
+#### 🍪 **Cookie Favicon**
+- Added cookie emoji (🍪) as site favicon for better brand recognition in browser tabs
+
+#### 📱 **Mobile-First Improvements**
+- **Subtotal Layout**: Changed from right-aligned to left-justified with "Tax not included" note
+- **Phone Input**: Added `type="tel"` with `inputmode="tel"` to trigger native phone keypad on mobile
+- **Submit Button**: Fixed overflow issues - now fits perfectly on all screen sizes (mobile & desktop)
+- **Sticky Footer**: Improved responsive behavior with proper box-sizing
+
+#### ✨ **Enhanced Customer Info Validation**
+- Name, phone, delivery, and email fields now validate on submit
+- Visual feedback with red borders and error messages
+- Phone validation ensures minimum 10 digits
+- Email validation checks for proper format
+
 ### Version 2.0 (2025-12-15)
 
-#### 🔄 **Orders-2 Formatting Overhaul**
+#### 🔄 **Orders Formatting Overhaul**
 - **Changed from**: Multiple columns per option choice (e.g., `item_egg`, `item_no egg`)
 - **Changed to**: Single options column with tuple format: `(opt1, opt2), (opt1, opt2)`
 - **Benefit**: Drastically improved kitchen readability
@@ -313,9 +337,9 @@ Auto-calculated totals appear at the bottom, updated after each order.
   - Selected: Blue background + shadow
 
 #### 🛠️ **Backend Improvements**
-- Refactored `writeToOrders2()` to group instances by item
+- Refactored `writeToOrders()` to group instances by item
 - Options formatting logic: `(opt1, opt2), (opt1, opt2), ...`
-- Updated `initializeOrders2Headers()` for new column structure
+- Updated `initializeOrdersHeaders()` for new column structure
 
 ---
 
@@ -326,14 +350,19 @@ The system includes built-in menu tools accessible from the Google Sheets interf
 ### 📋 Little Bites Tools Menu
 
 #### 🔄 Archive & Clear Orders
-- Creates timestamped archives of Menu, Orders, and Orders-2 sheets
-- Clears Orders and Orders-2 (keeps headers)
+- Creates timestamped archives of Menu, orders_json, and Orders sheets
+- Clears orders_json and Orders (keeps headers)
 - Recommended: Run at end of each day/week
 
-#### 🛠️ Rebuild Orders-2 Headers
-- Regenerates Orders-2 columns based on current Menu
+#### 🛠️ Rebuild Orders Headers
+- Regenerates Orders columns based on current Menu
 - Use when you add/remove menu items or change options
 - Ensures column headers match available menu items
+
+#### ❓ Get Help
+- Opens the HOWTO.md documentation in a new browser tab
+- Quick access to setup guide and troubleshooting
+- Direct link to GitHub repository documentation
 
 ---
 
@@ -370,10 +399,10 @@ The system includes built-in menu tools accessible from the Google Sheets interf
 **Options not appearing**
 - Verify Menu sheet has proper `options` syntax (use `/` and `|`)
 - Check for extra spaces or special characters
-- Rebuild Orders-2 headers from Google Sheets menu
+- Rebuild Orders headers from Google Sheets menu
 
-**Orders-2 formatting wrong**
-- Run "🛠️ Rebuild Orders-2 Headers" from Sheets menu
+**Orders formatting wrong**
+- Run "🛠️ Rebuild Orders Headers" from Sheets menu
 - Verify you're using the latest version of `AppsScript.gs`
 - Check that menu items have consistent naming
 
@@ -388,7 +417,8 @@ The system includes built-in menu tools accessible from the Google Sheets interf
 
 | Version | Date | Changes |
 |---------|------|---------|
-| **2.0** | 2025-12-15 | Orders-2 format overhaul, validation, animations |
+| **2.1** | 2026-01-09 | Multi-option state preservation, cookie favicon, mobile improvements, enhanced validation |
+| **2.0** | 2025-12-15 | Orders format overhaul, validation, animations |
 | **1.5** | 2025-12-14 | Per-instance options system |
 | **1.0** | 2025-12-02 | Initial release |
 
@@ -402,4 +432,4 @@ For issues, questions, or feature requests, please open an issue in the reposito
 
 **Built with ❤️ for Little Bites**
 
-*Last updated: December 15, 2025*
+*Last updated: January 9, 2026*

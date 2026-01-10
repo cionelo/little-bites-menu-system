@@ -7,12 +7,12 @@
  * Designed to be embedded in Squarespace or used as a standalone page.
  *
  * STRUCTURE:
- * 1. Header: Page title "This Week's Menu"
- * 2. Customer Info Section: Name, phone, delivery preference, email
+ * 1. Header: Page title "This Week's Menu" with cookie emoji favicon
+ * 2. Customer Info Section: Name, phone (tel input for mobile keypad), delivery preference, email
  * 3. Menu Section: Dynamically populated by app.js
  * 4. Bite Buddy Section: Optional field for sharing orders
  * 5. Comments Section: Special requests/notes
- * 6. Sticky Footer: Subtotal display and submit button
+ * 6. Sticky Footer: Left-justified subtotal with "Tax not included" note and submit button
  *
  * DYNAMIC ELEMENTS:
  * - #menu-area: Container where menu cards are dynamically rendered
@@ -24,9 +24,15 @@
  * - Uses Poppins & Nunito fonts (Canva Sans equivalents)
  * - Blue theme (#006dab) with rounded corners
  * - Sticky footer keeps submit button always visible
+ * - Cookie emoji (🍪) favicon for brand recognition
  *
- * @version 2.0
- * @date 2025-12-15
+ * MOBILE OPTIMIZATIONS:
+ * - Phone input uses type="tel" and inputmode="tel" for native phone keypad
+ * - Viewport optimized for all device sizes
+ * - Footer and buttons fit within screen boundaries
+ *
+ * @version 2.1
+ * @date 2026-01-09
  */
 -->
 <!DOCTYPE html>
@@ -35,6 +41,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Little Bites Menu</title>
+
+<!-- Favicon (Cookie Emoji) -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍪</text></svg>">
 
 <!-- Fonts (Canva Sans equivalents) -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
@@ -57,7 +66,7 @@
   <div class="section-title">Your Info</div>
   <div class="card">
     <input id="name" type="text" placeholder="Name (first & last)">
-    <input id="phone" type="text" placeholder="Phone Number">
+    <input id="phone" type="tel" inputmode="tel" placeholder="Phone Number">
     <input id="delivery" type="text" placeholder="Pickup or Office Delivery">
     <input id="email" type="email" placeholder="Email for Invoice">
   </div>
@@ -82,9 +91,12 @@
 
 <!-- STICKY FOOTER -->
 <div class="sticky-footer">
-  <div class="subtotal-row">
-    <span>Subtotal:</span>
-    <span id="subtotal">$0</span>
+  <div class="subtotal-container">
+    <div class="subtotal-row">
+      <span class="subtotal-label">Subtotal:</span>
+      <span id="subtotal" class="subtotal-amount">$0</span>
+    </div>
+    <div class="tax-note">Tax not included</div>
   </div>
   <button class="submit-btn" onclick="submitOrder()">Submit Order</button>
 </div>

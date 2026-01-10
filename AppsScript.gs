@@ -6,33 +6,34 @@
  * It connects to a Google Spreadsheet with multiple tabs for menu, orders, and kitchen prep.
  *
  * SPREADSHEET STRUCTURE:
- * - Menu Sheet: Contains menu items with columns: name, price, description, options
+ * - Menu Sheet: Contains menu items with columns: category, name, price, options, description
+ *   - category (optional): Used to group menu items (e.g., "Breakfast", "Beverages", "Salads")
  *   - Options format: "choice1/choice2|choice3/choice4" (pipe separates option groups, slash separates choices)
  *   - Example: "egg/no egg|croissant/muffin" = two option groups (egg choice and bread choice)
  *
- * - Orders Sheet: Stores raw order data with readable summary
- * - Orders-2 Sheet: Kitchen prep format with item counts and formatted options
+ * - orders_json Sheet: Stores raw order data with readable summary (hidden from user view)
+ * - Orders Sheet: Kitchen prep format with item counts and formatted options
  *   - Format: item columns + "{item name} - options" columns
  *   - Options display: "(opt1, opt2), (opt1, opt2)" for easy kitchen reading
  *   - Totals row: Item counts (SUM formulas) + aggregated option counts
  *     Example: "4x(Wrap), 1x(Salad)" - sorted by count, descending
  *
  * - Kitchen Prep Summary Sheet: Simplified view with abbreviated options for quick kitchen reference
- *   - Auto-generated from Orders-2 totals row
+ *   - Auto-generated from Orders totals row
  *   - Format: ITEM | QUANTITY | OPTIONS BREAKDOWN
  *   - Abbreviates options: "5x(E,CR), 3x(NE,MF)" instead of "5x(egg, croissant), 3x(no egg, muffin)"
  *
  * KEY FEATURES:
  * - GET endpoint: Returns menu data as JSON
- * - POST endpoint: Receives orders and writes to both Orders and Orders-2 sheets
- * - Dynamic header generation: Orders-2 headers auto-update based on Menu sheet
+ * - POST endpoint: Receives orders and writes to both orders_json and Orders sheets
+ * - Dynamic header generation: Orders headers auto-update based on Menu sheet
  * - Options formatting: Groups instance options as "(option1, option2), (option1, option2)"
  * - Totals aggregation: Counts option tuples across all orders for kitchen prep
  * - Kitchen shorthand: Auto-abbreviates options for faster kitchen reading
  * - Archive & clear functionality: Built-in menu tool for end-of-day operations
  *
  * RECENT UPDATES:
- * - Changed Orders-2 from multiple option columns to single options column per item
+ * - Changed Orders from multiple option columns to single options column per item
  * - Options now formatted as comma-separated tuples for kitchen readability
  * - Frontend validation ensures all options are selected before submission
  * - Added totals row aggregation for option counts (e.g., "4x(Wrap), 1x(Salad)")
@@ -68,12 +69,12 @@ function doGet(e) {
 // **************************************
 function doPost(e) {
   const ss = SpreadsheetApp.getActive();
-  const ordersSheet = ss.getSheetByName("Orders");
-  const orders2Sheet = getOrCreateOrders2Sheet();
+  const ordersJsonSheet = ss.getSheetByName("orders_json");
+  const ordersSheet = getOrCreateOrdersSheet();
 
   const payload = JSON.parse(e.postData.contents);
 
-  // Build readable order summary for "Orders" tab
+  // Build readable order summary for "orders_json" tab
   const readableItems = payload.items.map(item => {
     // Handle both old format (single options) and new format (instances)
     if (item.instances && item.instances.length > 0) {
@@ -91,8 +92,8 @@ function doPost(e) {
     }
   }).join(" | ");
 
-  // Write to "Orders" tab (original format)
-  ordersSheet.appendRow([
+  // Write to "orders_json" tab (raw data storage)
+  ordersJsonSheet.appendRow([
     new Date(),
     payload.name,
     payload.phone,
@@ -104,31 +105,31 @@ function doPost(e) {
     payload.comments
   ]);
 
-  // Write to "Orders-2" tab (kitchen prep format)
-  writeToOrders2(orders2Sheet, payload);
+  // Write to "Orders" tab (kitchen prep format)
+  writeToOrders(ordersSheet, payload);
 
   return ContentService.createTextOutput("OK");
 }
 
 // **************************************
-// GET OR CREATE ORDERS-2 SHEET
+// GET OR CREATE ORDERS SHEET
 // **************************************
-function getOrCreateOrders2Sheet() {
+function getOrCreateOrdersSheet() {
   const ss = SpreadsheetApp.getActive();
-  let sheet = ss.getSheetByName("Orders-2");
+  let sheet = ss.getSheetByName("Orders");
 
   if (!sheet) {
-    sheet = ss.insertSheet("Orders-2");
-    initializeOrders2Headers(sheet);
+    sheet = ss.insertSheet("Orders");
+    initializeOrdersHeaders(sheet);
   }
 
   return sheet;
 }
 
 // **************************************
-// INITIALIZE ORDERS-2 HEADERS
+// INITIALIZE ORDERS HEADERS
 // **************************************
-function initializeOrders2Headers(sheet) {
+function initializeOrdersHeaders(sheet) {
   const ss = SpreadsheetApp.getActive();
   const menuSheet = ss.getSheetByName("Menu");
   const menuData = menuSheet.getDataRange().getValues();
@@ -166,9 +167,9 @@ function initializeOrders2Headers(sheet) {
 }
 
 // **************************************
-// WRITE ORDER TO ORDERS-2 (KITCHEN PREP)
+// WRITE ORDER TO ORDERS (KITCHEN PREP)
 // **************************************
-function writeToOrders2(sheet, payload) {
+function writeToOrders(sheet, payload) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const rowData = new Array(headers.length).fill("");
 
@@ -363,33 +364,33 @@ function archiveAndClear() {
     menuArchive.setName(`Menu_Archive_${timestamp}`);
   }
 
-  // Archive Orders
+  // Archive orders_json (raw data)
+  const ordersJsonSheet = ss.getSheetByName("orders_json");
+  if (ordersJsonSheet) {
+    const ordersJsonArchive = ordersJsonSheet.copyTo(ss);
+    ordersJsonArchive.setName(`orders_json_Archive_${timestamp}`);
+
+    // Clear orders_json (keep headers)
+    const lastRow = ordersJsonSheet.getLastRow();
+    if (lastRow > 1) {
+      ordersJsonSheet.deleteRows(2, lastRow - 1);
+    }
+  }
+
+  // Archive and clear Orders (kitchen prep)
   const ordersSheet = ss.getSheetByName("Orders");
   if (ordersSheet) {
     const ordersArchive = ordersSheet.copyTo(ss);
     ordersArchive.setName(`Orders_Archive_${timestamp}`);
 
-    // Clear Orders (keep headers)
+    // Clear Orders (keep headers, remove totals)
     const lastRow = ordersSheet.getLastRow();
     if (lastRow > 1) {
       ordersSheet.deleteRows(2, lastRow - 1);
     }
   }
 
-  // Archive and clear Orders-2
-  const orders2Sheet = ss.getSheetByName("Orders-2");
-  if (orders2Sheet) {
-    const orders2Archive = orders2Sheet.copyTo(ss);
-    orders2Archive.setName(`Orders-2_Archive_${timestamp}`);
-
-    // Clear Orders-2 (keep headers, remove totals)
-    const lastRow = orders2Sheet.getLastRow();
-    if (lastRow > 1) {
-      orders2Sheet.deleteRows(2, lastRow - 1);
-    }
-  }
-
-  SpreadsheetApp.getUi().alert(`✅ Archive created: ${timestamp}\n\nOrders and Orders-2 have been cleared.`);
+  SpreadsheetApp.getUi().alert(`✅ Archive created: ${timestamp}\n\norders_json and Orders have been cleared.`);
 }
 
 // **************************************
@@ -399,32 +400,59 @@ function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('📋 Little Bites Tools')
     .addItem('🔄 Archive & Clear Orders', 'archiveAndClear')
-    .addItem('🛠️ Rebuild Orders-2 Headers', 'rebuildOrders2Headers')
+    .addItem('🛠️ Rebuild Orders Headers', 'rebuildOrdersHeaders')
     .addItem('👨‍🍳 Generate Kitchen Prep Summary', 'generateKitchenSummary')
+    .addSeparator()
+    .addItem('❓ Get Help', 'getHelp')
     .addToUi();
 }
 
 // **************************************
-// REBUILD ORDERS-2 HEADERS (MANUAL TOOL)
+// REBUILD ORDERS HEADERS (MANUAL TOOL)
 // **************************************
-function rebuildOrders2Headers() {
-  const sheet = getOrCreateOrders2Sheet();
-  initializeOrders2Headers(sheet);
-  SpreadsheetApp.getUi().alert("✅ Orders-2 headers have been rebuilt based on current Menu.");
+function rebuildOrdersHeaders() {
+  const sheet = getOrCreateOrdersSheet();
+  initializeOrdersHeaders(sheet);
+  SpreadsheetApp.getUi().alert("✅ Orders headers have been rebuilt based on current Menu.");
+}
+
+// **************************************
+// GET HELP - OPENS DOCUMENTATION
+// **************************************
+/**
+ * Opens the HOWTO.md documentation in a new browser tab.
+ *
+ * PURPOSE:
+ * Provides quick access to setup guide and troubleshooting documentation
+ * directly from the Google Sheets interface.
+ *
+ * LOCATION:
+ * GitHub repository: https://github.com/cionelo/little-bites-menu-system
+ *
+ * TRIGGERED BY:
+ * User clicking "📋 Little Bites Tools" → "❓ Get Help"
+ */
+function getHelp() {
+  const url = "https://github.com/cionelo/little-bites-menu-system/blob/master/HOWTO.md";
+  const html = `<script>window.open('${url}', '_blank');google.script.host.close();</script>`;
+  const ui = HtmlService.createHtmlOutput(html)
+    .setWidth(1)
+    .setHeight(1);
+  SpreadsheetApp.getUi().showModalDialog(ui, 'Opening Help Documentation...');
 }
 
 // **************************************
 // GENERATE KITCHEN PREP SUMMARY
 // **************************************
 /**
- * Creates a simplified "Kitchen Prep Summary" sheet from Orders-2 totals row.
+ * Creates a simplified "Kitchen Prep Summary" sheet from Orders totals row.
  *
  * PURPOSE:
  * Provides kitchen staff with an easy-to-read summary using abbreviated options
  * for faster prep and reduced reading time during busy service.
  *
  * PROCESS:
- * 1. Reads TOTALS row from Orders-2 sheet
+ * 1. Reads TOTALS row from Orders sheet
  * 2. Extracts item counts and options strings
  * 3. Abbreviates options using formatKitchenShorthand()
  * 4. Generates clean 3-column table: ITEM | QUANTITY | OPTIONS BREAKDOWN
@@ -434,7 +462,7 @@ function rebuildOrders2Headers() {
  * - Items without options: "—"
  *
  * REGENERATION:
- * - Can be regenerated at any time from current Orders-2 data
+ * - Can be regenerated at any time from current Orders data
  * - Not included in archive logic (always generate fresh as needed)
  * - Automatically clears and recreates sheet on each run
  *
@@ -443,10 +471,10 @@ function rebuildOrders2Headers() {
  */
 function generateKitchenSummary() {
   const ss = SpreadsheetApp.getActive();
-  const orders2Sheet = ss.getSheetByName("Orders-2");
+  const ordersSheet = ss.getSheetByName("Orders");
 
-  if (!orders2Sheet) {
-    SpreadsheetApp.getUi().alert("⚠️ Orders-2 sheet not found. Please submit at least one order first.");
+  if (!ordersSheet) {
+    SpreadsheetApp.getUi().alert("⚠️ Orders sheet not found. Please submit at least one order first.");
     return;
   }
 
@@ -458,19 +486,19 @@ function generateKitchenSummary() {
     summarySheet = ss.insertSheet("Kitchen Prep Summary");
   }
 
-  // Get Orders-2 data
-  const lastRow = orders2Sheet.getLastRow();
+  // Get Orders data
+  const lastRow = ordersSheet.getLastRow();
   if (lastRow < 2) {
-    SpreadsheetApp.getUi().alert("⚠️ No orders found in Orders-2 sheet.");
+    SpreadsheetApp.getUi().alert("⚠️ No orders found in Orders sheet.");
     return;
   }
 
-  const headers = orders2Sheet.getRange(1, 1, 1, orders2Sheet.getLastColumn()).getValues()[0];
+  const headers = ordersSheet.getRange(1, 1, 1, ordersSheet.getLastColumn()).getValues()[0];
 
   // Find TOTALS row
   let totalsRowIndex = -1;
   for (let i = lastRow; i >= 2; i--) {
-    const cellValue = orders2Sheet.getRange(i, 1).getValue();
+    const cellValue = ordersSheet.getRange(i, 1).getValue();
     if (cellValue === "TOTALS") {
       totalsRowIndex = i;
       break;
@@ -478,12 +506,12 @@ function generateKitchenSummary() {
   }
 
   if (totalsRowIndex === -1) {
-    SpreadsheetApp.getUi().alert("⚠️ TOTALS row not found in Orders-2 sheet.");
+    SpreadsheetApp.getUi().alert("⚠️ TOTALS row not found in Orders sheet.");
     return;
   }
 
   // Get totals row data
-  const totalsData = orders2Sheet.getRange(totalsRowIndex, 1, 1, headers.length).getValues()[0];
+  const totalsData = ordersSheet.getRange(totalsRowIndex, 1, 1, headers.length).getValues()[0];
 
   // Build kitchen-friendly summary
   const summaryData = [];
@@ -570,7 +598,7 @@ function generateKitchenSummary() {
  * 4. Rejoins with commas (no spaces between options in tuple)
  * 5. Returns final abbreviated string
  *
- * @param {string} optionsString - Aggregated options from Orders-2 totals
+ * @param {string} optionsString - Aggregated options from Orders totals
  * @return {string} Abbreviated shorthand for kitchen
  */
 function formatKitchenShorthand(optionsString) {
