@@ -359,6 +359,18 @@ The system includes built-in menu tools accessible from the Google Sheets interf
 - Use when you add/remove menu items or change options
 - Ensures column headers match available menu items
 
+#### 🔢 Refresh Totals
+- Recalculates the TOTALS row in the Orders sheet
+- Use after manually deleting test orders or editing data
+- Removes old TOTALS rows and generates fresh calculations
+- Ensures totals stay in sync with actual order data
+
+#### 👨‍🍳 Generate Kitchen Prep Summary
+- Creates simplified "Kitchen Prep Summary" sheet from Orders totals
+- Uses abbreviated options for faster kitchen reading
+- Example: "5x(E,CR)" instead of "5x(egg, croissant)"
+- Can be regenerated anytime from current data
+
 #### ❓ Get Help
 - Opens the HOWTO.md documentation in a new browser tab
 - Quick access to setup guide and troubleshooting

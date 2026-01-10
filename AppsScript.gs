@@ -31,16 +31,25 @@
  * - Totals aggregation: Counts option tuples across all orders for kitchen prep
  * - Kitchen shorthand: Auto-abbreviates options for faster kitchen reading
  * - Archive & clear functionality: Built-in menu tool for end-of-day operations
+ * - Refresh totals: Manual recalculation of TOTALS row after editing data
  *
- * RECENT UPDATES:
+ * BUILT-IN TOOLS (📋 Little Bites Tools Menu):
+ * - 🔄 Archive & Clear Orders: Creates timestamped backups and clears order data
+ * - 🛠️ Rebuild Orders Headers: Regenerates column headers based on current Menu
+ * - 🔢 Refresh Totals: Recalculates TOTALS row after manual edits or deletions
+ * - 👨‍🍳 Generate Kitchen Prep Summary: Creates abbreviated kitchen-friendly summary
+ * - ❓ Get Help: Opens documentation in browser
+ *
+ * RECENT UPDATES (v2.1):
+ * - Added Refresh Totals tool for manual totals recalculation
  * - Changed Orders from multiple option columns to single options column per item
  * - Options now formatted as comma-separated tuples for kitchen readability
  * - Frontend validation ensures all options are selected before submission
  * - Added totals row aggregation for option counts (e.g., "4x(Wrap), 1x(Salad)")
  * - Added Kitchen Prep Summary generator with abbreviated options (e.g., "5x(E,CR)")
  *
- * @version 2.2
- * @date 2025-12-15
+ * @version 2.1
+ * @date 2026-01-09
  */
 
 // **************************************
@@ -401,6 +410,7 @@ function onOpen() {
   ui.createMenu('📋 Little Bites Tools')
     .addItem('🔄 Archive & Clear Orders', 'archiveAndClear')
     .addItem('🛠️ Rebuild Orders Headers', 'rebuildOrdersHeaders')
+    .addItem('🔢 Refresh Totals', 'refreshTotals')
     .addItem('👨‍🍳 Generate Kitchen Prep Summary', 'generateKitchenSummary')
     .addSeparator()
     .addItem('❓ Get Help', 'getHelp')
@@ -414,6 +424,49 @@ function rebuildOrdersHeaders() {
   const sheet = getOrCreateOrdersSheet();
   initializeOrdersHeaders(sheet);
   SpreadsheetApp.getUi().alert("✅ Orders headers have been rebuilt based on current Menu.");
+}
+
+// **************************************
+// REFRESH TOTALS (MANUAL TOOL)
+// **************************************
+/**
+ * Manually refreshes the totals row in the Orders sheet.
+ *
+ * PURPOSE:
+ * Allows users to recalculate totals after manually editing or deleting rows
+ * in the Orders sheet without submitting a new order.
+ *
+ * USE CASES:
+ * - After deleting test orders
+ * - After manually modifying order data
+ * - When totals appear out of sync with actual data
+ *
+ * PROCESS:
+ * Simply calls updateTotalsRow() which:
+ * 1. Removes existing TOTALS rows
+ * 2. Recalculates totals based on current data
+ * 3. Adds new TOTALS row at bottom
+ *
+ * TRIGGERED BY:
+ * User clicking "📋 Little Bites Tools" → "🔢 Refresh Totals"
+ */
+function refreshTotals() {
+  const ss = SpreadsheetApp.getActive();
+  const ordersSheet = ss.getSheetByName("Orders");
+
+  if (!ordersSheet) {
+    SpreadsheetApp.getUi().alert("⚠️ Orders sheet not found.");
+    return;
+  }
+
+  const lastRow = ordersSheet.getLastRow();
+  if (lastRow < 2) {
+    SpreadsheetApp.getUi().alert("⚠️ No data found in Orders sheet.");
+    return;
+  }
+
+  updateTotalsRow(ordersSheet);
+  SpreadsheetApp.getUi().alert("✅ Totals have been refreshed successfully!");
 }
 
 // **************************************
