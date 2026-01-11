@@ -1,0 +1,5 @@
+# Ignore this folder 
+/ignore/
+
+# Ignore all macOS metadata files 
+.DS_Store
