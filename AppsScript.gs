@@ -24,8 +24,9 @@
  *   - Abbreviates options: "5x(E,CR), 3x(NE,MF)" instead of "5x(egg, croissant), 3x(no egg, muffin)"
  *
  * KEY FEATURES:
- * - GET endpoint: Returns menu data as JSON
+ * - GET endpoint: Returns menu data as JSON (includes menu status: published/paused)
  * - POST endpoint: Receives orders and writes to both orders_json and Orders sheets
+ * - Menu Pause/Publish: Toggle menu availability while updating weekly items
  * - Dynamic header generation: Orders headers auto-update based on Menu sheet
  * - Options formatting: Groups instance options as "(option1, option2), (option1, option2)"
  * - Totals aggregation: Counts option tuples across all orders for kitchen prep
@@ -34,13 +35,17 @@
  * - Refresh totals: Manual recalculation of TOTALS row after editing data
  *
  * BUILT-IN TOOLS (📋 Little Bites Tools Menu):
+ * - ⏸️/▶️ Pause/Publish Menu: Toggle menu availability for weekly updates
  * - 🔄 Archive & Clear Orders: Creates timestamped backups and clears order data
  * - 🛠️ Rebuild Orders Headers: Regenerates column headers based on current Menu
  * - 🔢 Refresh Totals: Recalculates TOTALS row after manual edits or deletions
  * - 👨‍🍳 Generate Kitchen Prep Summary: Creates abbreviated kitchen-friendly summary
  * - ❓ Get Help: Opens documentation in browser
  *
- * RECENT UPDATES (v2.1):
+ * RECENT UPDATES (v2.2):
+ * - Added Menu Pause/Publish toggle for weekly menu updates
+ * - Frontend displays overlay modal when menu is paused
+ * - Menu status stored in Script Properties
  * - Added Refresh Totals tool for manual totals recalculation
  * - Changed Orders from multiple option columns to single options column per item
  * - Options now formatted as comma-separated tuples for kitchen readability
@@ -48,9 +53,74 @@
  * - Added totals row aggregation for option counts (e.g., "4x(Wrap), 1x(Salad)")
  * - Added Kitchen Prep Summary generator with abbreviated options (e.g., "5x(E,CR)")
  *
- * @version 2.1
- * @date 2026-01-09
+ * @version 2.2
+ * @date 2026-01-24
  */
+
+// **************************************
+// MENU STATUS MANAGEMENT
+// **************************************
+/**
+ * Gets the current menu status (published or paused).
+ *
+ * PURPOSE:
+ * Checks Script Properties to determine if menu is available for ordering.
+ *
+ * RETURNS:
+ * - "published" (default): Menu is live, orders can be placed
+ * - "paused": Menu is being updated, orders blocked
+ *
+ * STORAGE:
+ * Uses Script Properties (invisible to user, persists across sessions)
+ */
+function getMenuStatus() {
+  const props = PropertiesService.getScriptProperties();
+  const status = props.getProperty("menuStatus");
+  return status || "published"; // Default to published if not set
+}
+
+/**
+ * Sets the menu status.
+ *
+ * @param {string} status - Either "published" or "paused"
+ */
+function setMenuStatus(status) {
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty("menuStatus", status);
+}
+
+/**
+ * Toggles the menu between paused and published states.
+ *
+ * PURPOSE:
+ * Allows kitchen owner to pause the menu while updating weekly items,
+ * then publish when ready for customers to order.
+ *
+ * WORKFLOW:
+ * 1. Owner clicks "⏸️ Pause Menu" before updating
+ * 2. Frontend shows "Menu updating..." overlay
+ * 3. Owner updates menu items in Google Sheets
+ * 4. Owner clicks "▶️ Publish Menu" when ready
+ * 5. Frontend shows updated menu, orders can be placed
+ *
+ * TRIGGERED BY:
+ * User clicking "📋 Little Bites Tools" → "⏸️ Pause Menu" or "▶️ Publish Menu"
+ */
+function toggleMenuStatus() {
+  const currentStatus = getMenuStatus();
+  const newStatus = currentStatus === "published" ? "paused" : "published";
+  setMenuStatus(newStatus);
+
+  const statusEmoji = newStatus === "published" ? "▶️" : "⏸️";
+  const statusText = newStatus === "published" ? "PUBLISHED" : "PAUSED";
+  const actionText = newStatus === "published"
+    ? "Customers can now place orders."
+    : "Customers will see 'Menu updating...' message.";
+
+  SpreadsheetApp.getUi().alert(
+    `${statusEmoji} Menu is now ${statusText}\n\n${actionText}`
+  );
+}
 
 // **************************************
 // MENU FETCH (GET REQUEST)
@@ -68,8 +138,11 @@ function doGet(e) {
     return o;
   });
 
+  // Include menu status in response
+  const status = getMenuStatus();
+
   return ContentService
-    .createTextOutput(JSON.stringify({ menu: data }))
+    .createTextOutput(JSON.stringify({ menu: data, status: status }))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -77,6 +150,16 @@ function doGet(e) {
 // ORDER SUBMISSION (POST REQUEST)
 // **************************************
 function doPost(e) {
+  // Check if menu is paused - reject orders if so
+  const status = getMenuStatus();
+  if (status === "paused") {
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        error: "Menu is currently being updated. Please try again later."
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   const ss = SpreadsheetApp.getActive();
   const ordersJsonSheet = ss.getSheetByName("orders_json");
   const ordersSheet = getOrCreateOrdersSheet();
@@ -407,7 +490,14 @@ function archiveAndClear() {
 // **************************************
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
+  const currentStatus = getMenuStatus();
+  const toggleLabel = currentStatus === "published"
+    ? "⏸️ Pause Menu (Currently: LIVE)"
+    : "▶️ Publish Menu (Currently: PAUSED)";
+
   ui.createMenu('📋 Little Bites Tools')
+    .addItem(toggleLabel, 'toggleMenuStatus')
+    .addSeparator()
     .addItem('🔄 Archive & Clear Orders', 'archiveAndClear')
     .addItem('🛠️ Rebuild Orders Headers', 'rebuildOrdersHeaders')
     .addItem('🔢 Refresh Totals', 'refreshTotals')

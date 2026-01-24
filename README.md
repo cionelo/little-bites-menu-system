@@ -44,7 +44,7 @@ The Little Bites Menu System provides a seamless ordering experience for weekly 
 │  - app.js       │
 └────────┬────────┘
          │
-         │ GET /doGet (fetch menu)
+         │ GET /doGet (fetch menu + status)
          │ POST /doPost (submit order)
          │
          ▼
@@ -53,6 +53,9 @@ The Little Bites Menu System provides a seamless ordering experience for weekly 
 │     Script      │
 │                 │
 │ AppsScript.gs   │
+│                 │
+│ Script Props:   │
+│ - menuStatus    │
 └────────┬────────┘
          │
          │ Read/Write
@@ -286,6 +289,16 @@ Auto-calculated totals appear at the bottom, updated after each order.
 
 ## Recent Updates
 
+### Version 2.2 (2026-01-24)
+
+#### ⏸️ **Menu Pause/Publish System**
+- **New feature**: Kitchen owner can pause menu while updating weekly items
+- **Pause Menu**: Shows "Menu updating for the week... Come back later!" overlay to customers
+- **Publish Menu**: Makes updated menu live for ordering
+- **Toggle button**: Single button in Little Bites Tools menu shows current status
+- **Safety checks**: Orders blocked on both frontend and backend when paused
+- **Smooth UX**: Overlay modal with cookie icon animation, menu visible but dimmed in background
+
 ### Version 2.1 (2026-01-09)
 
 #### 🔧 **Multi-Option Item State Preservation**
@@ -349,6 +362,16 @@ The system includes built-in menu tools accessible from the Google Sheets interf
 
 ### 📋 Little Bites Tools Menu
 
+#### ⏸️/▶️ Pause/Publish Menu
+- **Toggle menu availability** while updating weekly items
+- When **paused**: Customers see "Menu updating for the week... Come back later!" overlay
+- When **published**: Normal ordering flow resumes
+- Button label shows current status: "(Currently: LIVE)" or "(Currently: PAUSED)"
+- **Recommended workflow**:
+  1. Click "⏸️ Pause Menu" before updating
+  2. Make your menu changes in the Menu sheet
+  3. Click "▶️ Publish Menu" when ready
+
 #### 🔄 Archive & Clear Orders
 - Creates timestamped archives of Menu, orders_json, and Orders sheets
 - Clears orders_json and Orders (keeps headers)
@@ -375,6 +398,30 @@ The system includes built-in menu tools accessible from the Google Sheets interf
 - Opens the HOWTO.md documentation in a new browser tab
 - Quick access to setup guide and troubleshooting
 - Direct link to GitHub repository documentation
+
+---
+
+## Weekly Menu Update Workflow
+
+The recommended workflow for updating your menu each week:
+
+### 1. Pause the Menu
+- Go to Google Sheets → **📋 Little Bites Tools** → **⏸️ Pause Menu**
+- Customers will see: "Menu updating for the week... Come back later!"
+- Orders are blocked until you publish
+
+### 2. Update Menu Items
+- Edit the **Menu** sheet with this week's items
+- Add/remove items, update prices, modify options
+- If you added/removed items, run **🛠️ Rebuild Orders Headers**
+
+### 3. Publish the Menu
+- Go to Google Sheets → **📋 Little Bites Tools** → **▶️ Publish Menu**
+- The overlay disappears, customers can order again
+
+### 4. End of Week
+- Run **🔄 Archive & Clear Orders** to save this week's orders
+- Optionally run **👨‍🍳 Generate Kitchen Prep Summary** for final totals
 
 ---
 
@@ -429,6 +476,7 @@ The system includes built-in menu tools accessible from the Google Sheets interf
 
 | Version | Date | Changes |
 |---------|------|---------|
+| **2.2** | 2026-01-24 | Menu pause/publish system for weekly updates |
 | **2.1** | 2026-01-09 | Multi-option state preservation, cookie favicon, mobile improvements, enhanced validation |
 | **2.0** | 2025-12-15 | Orders format overhaul, validation, animations |
 | **1.5** | 2025-12-14 | Per-instance options system |
@@ -444,4 +492,4 @@ For issues, questions, or feature requests, please open an issue in the reposito
 
 **Built with ❤️ for Little Bites**
 
-*Last updated: January 9, 2026*
+*Last updated: January 24, 2026*

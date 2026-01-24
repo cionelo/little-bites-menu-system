@@ -7,14 +7,16 @@
  * Designed to be embedded in Squarespace or used as a standalone page.
  *
  * STRUCTURE:
- * 1. Header: Page title "This Week's Menu" with cookie emoji favicon
- * 2. Customer Info Section: Name, phone (tel input for mobile keypad), delivery preference, email
- * 3. Menu Section: Dynamically populated by app.js
- * 4. Bite Buddy Section: Optional field for sharing orders
- * 5. Comments Section: Special requests/notes
- * 6. Sticky Footer: Left-justified subtotal with "Tax not included" note and submit button
+ * 1. Pause Overlay: Modal shown when menu is being updated (hidden by default)
+ * 2. Header: Page title "This Week's Menu" with cookie emoji favicon
+ * 3. Customer Info Section: Name, phone (tel input for mobile keypad), delivery preference, email
+ * 4. Menu Section: Dynamically populated by app.js
+ * 5. Bite Buddy Section: Optional field for sharing orders
+ * 6. Comments Section: Special requests/notes
+ * 7. Sticky Footer: Left-justified subtotal with "Tax not included" note and submit button
  *
  * DYNAMIC ELEMENTS:
+ * - #pause-overlay: Overlay shown when menu is paused for updates
  * - #menu-area: Container where menu cards are dynamically rendered
  * - All form inputs have IDs for JavaScript interaction
  * - Submit button triggers submitOrder() function from app.js
@@ -31,8 +33,8 @@
  * - Viewport optimized for all device sizes
  * - Footer and buttons fit within screen boundaries
  *
- * @version 2.1
- * @date 2026-01-09
+ * @version 2.2
+ * @date 2026-01-24
  */
 -->
 <!DOCTYPE html>
@@ -53,6 +55,16 @@
 </head>
 
 <body>
+
+<!-- PAUSE OVERLAY (shown when menu is being updated) -->
+<div id="pause-overlay" class="pause-overlay" style="display: none;">
+  <div class="pause-modal">
+    <div class="pause-icon">🍪</div>
+    <h2>Menu updating for the week...</h2>
+    <p>Come back later!</p>
+    <div class="pause-subtext">We're preparing something delicious for you.</div>
+  </div>
+</div>
 
 <!-- HEADER -->
 <header>

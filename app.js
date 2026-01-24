@@ -9,28 +9,34 @@
  * CORE FUNCTIONALITY:
  * 1. Menu Loading & Rendering
  *    - Fetches menu data from backend on page load
+ *    - Checks menu status (published/paused) and shows overlay if paused
  *    - Dynamically generates menu cards with prices, descriptions, and options
  *
- * 2. Quantity Management
+ * 2. Menu Pause/Publish System
+ *    - When menu is paused, shows "Menu updating..." overlay
+ *    - Prevents order submission while paused
+ *    - Overlay dims the page content but keeps menu visible in background
+ *
+ * 3. Quantity Management
  *    - +/- buttons to adjust item quantities
  *    - Automatically generates option selectors per instance
  *    - Real-time subtotal calculation
  *    - STATE PRESERVATION: When adding/removing quantities, existing option selections are preserved
  *
- * 3. Options System (Per-Instance)
+ * 4. Options System (Per-Instance)
  *    - Each ordered item gets individual option selectors (Item #1, Item #2, etc.)
  *    - Pill-style selectors for each option group
  *    - Example: 3 breakfast sandwiches = 3 sets of option selectors
  *    - Adding item #2 keeps item #1's selections intact
  *    - Removing item #3 preserves items #1 and #2
  *
- * 4. Validation
+ * 5. Validation
  *    - Customer info: Name, phone (10+ digits), delivery method, email (format check)
  *    - Menu options: Ensures ALL options are selected before submission
  *    - Visual feedback: Red borders, error messages with auto-clear on input
  *    - Displays helpful error: "Please pick an option for {item} (Item #{n})"
  *
- * 5. Order Submission
+ * 6. Order Submission
  *    - Collects all items with their instance-specific options
  *    - POSTs to backend with structured payload
  *    - Visual feedback with button animations (pulse, press effects)
@@ -47,15 +53,17 @@
  *   ]
  * }
  *
- * RECENT UPDATES (v2.1):
+ * RECENT UPDATES (v2.2):
+ * - Added menu pause/publish system with overlay modal
+ * - Frontend checks status and shows "Menu updating..." when paused
  * - Multi-option item state preservation (prevents option reset when adjusting quantities)
  * - Enhanced customer info validation with visual feedback
  * - Phone validation (minimum 10 digits)
  * - Email format validation
  * - Auto-clearing error states on user input
  *
- * @version 2.1
- * @date 2026-01-09
+ * @version 2.2
+ * @date 2026-01-24
  */
 
 // **************************************
@@ -65,6 +73,7 @@
 const BACKEND_URL = "https://script.google.com/macros/s/AKfycbx6-rRRpjpkWjeI7-sJInDnacVnWCrTO4N-cmGIC_heReds0jxDptJ4wWHqaoPM5kQJ4g/exec";
 
 let MENU = [];
+let MENU_STATUS = "published"; // "published" or "paused"
 
 // **************************************
 // LOAD MENU FROM GOOGLE SHEETS
@@ -76,9 +85,42 @@ async function loadMenu() {
     const res = await fetch(BACKEND_URL);
     const data = await res.json();
     MENU = data.menu;
+    MENU_STATUS = data.status || "published";
+
+    // Show/hide pause overlay based on status
+    updatePauseOverlay();
+
     renderMenu();
   } catch (err) {
     console.error("Error loading menu:", err);
+  }
+}
+
+// **************************************
+// PAUSE OVERLAY MANAGEMENT
+// **************************************
+/**
+ * Shows or hides the pause overlay based on current menu status.
+ *
+ * When menu is paused:
+ * - Shows semi-transparent overlay with "Menu updating..." message
+ * - Menu is visible but dimmed in background
+ * - Prevents interaction with form elements
+ *
+ * When menu is published:
+ * - Hides overlay
+ * - Normal ordering flow resumes
+ */
+function updatePauseOverlay() {
+  const overlay = document.getElementById("pause-overlay");
+  if (!overlay) return;
+
+  if (MENU_STATUS === "paused") {
+    overlay.style.display = "flex";
+    document.body.style.overflow = "hidden"; // Prevent scrolling
+  } else {
+    overlay.style.display = "none";
+    document.body.style.overflow = ""; // Restore scrolling
   }
 }
 
@@ -432,6 +474,12 @@ function submitOrder() {
 
   if (btn.disabled) return; // safety guard
 
+  // Safety check: Prevent submission if menu is paused
+  if (MENU_STATUS === "paused") {
+    alert("The menu is currently being updated. Please come back later to place your order.");
+    return;
+  }
+
   // Step 1: Validate customer info (name, phone, delivery, email)
   if (!validateCustomerInfo()) {
     // Scroll to first error field for better UX
@@ -468,8 +516,16 @@ function submitOrder() {
     method: "POST",
     body: JSON.stringify(payload),
   })
-    .then(res => {
-      if (!res.ok) throw new Error("Submit failed");
+    .then(res => res.json().catch(() => ({}))) // Try to parse JSON, fallback to empty object
+    .then(data => {
+      // Check if backend returned an error (e.g., menu paused)
+      if (data && data.error) {
+        btn.disabled = false;
+        btn.classList.remove("submitting");
+        btn.innerText = "Submit Order";
+        alert(data.error);
+        return;
+      }
       handleSuccessfulSubmit();
     })
     .catch(err => {

@@ -17,22 +17,28 @@
  *    - Sticky footer with submit button (mobile-optimized)
  *    - Card-based design with soft shadows
  *
- * 2. Menu Cards
+ * 2. Pause Overlay
+ *    - Full-screen semi-transparent overlay
+ *    - Centered modal with "Menu updating" message
+ *    - Shown when kitchen owner is updating weekly menu
+ *
+ * 3. Menu Cards
  *    - Meal title, price, description dropdown
  *    - Quantity controls (+/- buttons)
  *    - Per-instance option selectors (pills)
  *
- * 3. Interactive Elements
+ * 4. Interactive Elements
  *    - Quantity buttons: Hover inverts colors, active scales down
  *    - Pills: Hover lifts with border, selected gets blue background
  *    - Submit button: Hover lifts, active presses, submitting pulses
  *
- * 4. Animations
+ * 5. Animations
  *    - All transitions: 0.15-0.2s ease timing
  *    - Transform effects: translateY, scale for press feedback
  *    - Pulse animation for submit button during processing
+ *    - Gentle bounce for pause overlay modal
  *
- * 5. Validation & Error States
+ * 6. Validation & Error States
  *    - Red borders and background for invalid fields
  *    - Animated error messages with slideDown effect
  *    - Focus states clear errors automatically
@@ -43,14 +49,15 @@
  * - Subtotal left-justified with "Tax not included" note
  * - Submit button centered with max-width constraints
  *
- * RECENT UPDATES (v2.1):
+ * RECENT UPDATES (v2.2):
+ * - Added pause overlay modal for menu updates
  * - Fixed sticky footer overflow on mobile devices
  * - Redesigned subtotal layout (left-justified with tax note)
  * - Added proper box-sizing to prevent horizontal scrolling
  * - Enhanced customer info validation styling
  *
- * @version 2.1
- * @date 2026-01-09
+ * @version 2.2
+ * @date 2026-01-24
  */
 
 /* Little Bites Online Menu */
@@ -369,4 +376,93 @@ input.field-error:focus, textarea.field-error:focus {
 
 .desc-content.open {
   max-height: 200px; /* enough room */
+}
+
+/* =====================================
+   PAUSE OVERLAY (Menu Updating)
+   ===================================== */
+.pause-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 109, 171, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pause-modal {
+  background: white;
+  border-radius: 24px;
+  padding: 40px 32px;
+  text-align: center;
+  max-width: 340px;
+  margin: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalBounce 0.4s ease;
+}
+
+@keyframes modalBounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  60% {
+    transform: scale(1.02) translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.pause-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  animation: gentleBounce 2s ease-in-out infinite;
+}
+
+@keyframes gentleBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.pause-modal h2 {
+  color: var(--blue);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+}
+
+.pause-modal p {
+  color: #333;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 16px 0;
+}
+
+.pause-subtext {
+  color: #666;
+  font-size: 14px;
+  font-style: italic;
 }
