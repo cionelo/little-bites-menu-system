@@ -289,6 +289,15 @@ Auto-calculated totals appear at the bottom, updated after each order.
 
 ## Recent Updates
 
+### Version 2.3 (2026-02-16)
+
+#### 📝 **Rebuild Orders from JSON Tool**
+- **New tool**: Repopulates the Orders sheet using orders_json as the source of truth
+- **Use case**: Recover from corrupted or incorrectly edited Orders data
+- **How it works**: Clears Orders data rows, replays every order from the raw JSON stored in orders_json
+- **Preserves**: Original dates, customer info, item counts, and option tuple formatting
+- **Rebuilds**: TOTALS row recalculated after all orders are replayed
+
 ### Version 2.2 (2026-01-24)
 
 #### ⏸️ **Menu Pause/Publish System**
@@ -382,6 +391,14 @@ The system includes built-in menu tools accessible from the Google Sheets interf
 - Use when you add/remove menu items or change options
 - Ensures column headers match available menu items
 
+#### 📝 Rebuild Orders from JSON
+- Repopulates the Orders sheet from orders_json (source of truth)
+- Use when Orders data gets corrupted, manually edited incorrectly, or needs regenerating
+- Clears all Orders data rows, replays each order from raw JSON with original dates
+- Preserves exact formatting: item counts + option tuples `(opt1, opt2), (opt1, opt2)`
+- Rebuilds TOTALS row at the end
+- **Prerequisite**: Orders headers must exist (run "Rebuild Orders Headers" first if needed)
+
 #### 🔢 Refresh Totals
 - Recalculates the TOTALS row in the Orders sheet
 - Use after manually deleting test orders or editing data
@@ -462,6 +479,7 @@ The recommended workflow for updating your menu each week:
 
 **Orders formatting wrong**
 - Run "🛠️ Rebuild Orders Headers" from Sheets menu
+- If data is corrupted, run "📝 Rebuild Orders from JSON" to repopulate from source of truth
 - Verify you're using the latest version of `AppsScript.gs`
 - Check that menu items have consistent naming
 
@@ -476,6 +494,7 @@ The recommended workflow for updating your menu each week:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| **2.3** | 2026-02-16 | Rebuild Orders from JSON tool for data recovery |
 | **2.2** | 2026-01-24 | Menu pause/publish system for weekly updates |
 | **2.1** | 2026-01-09 | Multi-option state preservation, cookie favicon, mobile improvements, enhanced validation |
 | **2.0** | 2025-12-15 | Orders format overhaul, validation, animations |
@@ -492,4 +511,4 @@ For issues, questions, or feature requests, please open an issue in the reposito
 
 **Built with ❤️ for Little Bites**
 
-*Last updated: January 24, 2026*
+*Last updated: February 16, 2026*

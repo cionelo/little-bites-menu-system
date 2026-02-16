@@ -108,6 +108,18 @@ For an even simpler kitchen view:
 3. Select **🛠️ Rebuild Orders Headers**
 4. This updates the Orders tab to match your new menu
 
+### Recovering Corrupted Orders Data
+
+If the Orders sheet gets messed up (accidentally edited, rows deleted, formatting broken):
+1. Click **📋 Little Bites Tools** menu
+2. Select **📝 Rebuild Orders from JSON**
+3. This will:
+   - Clear all data rows in the Orders sheet (keeps headers)
+   - Re-read every order from orders_json (the raw backup)
+   - Replay each order with original dates and correct formatting
+   - Recalculate the TOTALS row
+4. **Note**: Orders headers must already exist — run **🛠️ Rebuild Orders Headers** first if needed
+
 ---
 
 ## Troubleshooting

@@ -33,16 +33,22 @@
  * - Kitchen shorthand: Auto-abbreviates options for faster kitchen reading
  * - Archive & clear functionality: Built-in menu tool for end-of-day operations
  * - Refresh totals: Manual recalculation of TOTALS row after editing data
+ * - Rebuild Orders from JSON: Repopulates Orders sheet from orders_json source of truth
  *
  * BUILT-IN TOOLS (📋 Little Bites Tools Menu):
  * - ⏸️/▶️ Pause/Publish Menu: Toggle menu availability for weekly updates
  * - 🔄 Archive & Clear Orders: Creates timestamped backups and clears order data
  * - 🛠️ Rebuild Orders Headers: Regenerates column headers based on current Menu
+ * - 📝 Rebuild Orders from JSON: Repopulates Orders sheet from orders_json data
  * - 🔢 Refresh Totals: Recalculates TOTALS row after manual edits or deletions
  * - 👨‍🍳 Generate Kitchen Prep Summary: Creates abbreviated kitchen-friendly summary
  * - ❓ Get Help: Opens documentation in browser
  *
- * RECENT UPDATES (v2.2):
+ * RECENT UPDATES (v2.3):
+ * - Added "Rebuild Orders from JSON" tool to repopulate Orders from orders_json
+ *   Uses orders_json as source of truth, replays all orders in kitchen prep format
+ *
+ * PREVIOUS UPDATES (v2.2):
  * - Added Menu Pause/Publish toggle for weekly menu updates
  * - Frontend displays overlay modal when menu is paused
  * - Menu status stored in Script Properties
@@ -53,8 +59,8 @@
  * - Added totals row aggregation for option counts (e.g., "4x(Wrap), 1x(Salad)")
  * - Added Kitchen Prep Summary generator with abbreviated options (e.g., "5x(E,CR)")
  *
- * @version 2.2
- * @date 2026-01-24
+ * @version 2.3
+ * @date 2026-02-16
  */
 
 // **************************************
@@ -500,6 +506,7 @@ function onOpen() {
     .addSeparator()
     .addItem('🔄 Archive & Clear Orders', 'archiveAndClear')
     .addItem('🛠️ Rebuild Orders Headers', 'rebuildOrdersHeaders')
+    .addItem('📝 Rebuild Orders from JSON', 'buildOrdersFromJson')
     .addItem('🔢 Refresh Totals', 'refreshTotals')
     .addItem('👨‍🍳 Generate Kitchen Prep Summary', 'generateKitchenSummary')
     .addSeparator()
@@ -836,4 +843,185 @@ function abbreviate(text) {
   } else {
     return trimmed.substring(0, 2).toUpperCase();
   }
+}
+
+// **************************************
+// REBUILD ORDERS FROM ORDERS_JSON (MANUAL TOOL)
+// **************************************
+/**
+ * Rebuilds the Orders sheet (kitchen prep format) from orders_json raw data.
+ *
+ * PURPOSE:
+ * Recovery/maintenance tool that repopulates the Orders sheet using orders_json
+ * as the source of truth. Use when the Orders sheet gets corrupted, manually
+ * edited incorrectly, or needs to be regenerated from scratch.
+ *
+ * PROCESS:
+ * 1. Reads Orders headers (must exist — run "Rebuild Orders Headers" first if needed)
+ * 2. Reads all rows from orders_json (raw JSON in column F, customer info in A-E, H-I)
+ * 3. Clears Orders data rows (keeps headers)
+ * 4. Replays each order using the same writeToOrders logic:
+ *    - Item count in the item column
+ *    - Option tuples "(opt1, opt2), (opt1, opt2)" in the options column
+ * 6. Rebuilds TOTALS row at the end
+ *
+ * ORDERS_JSON COLUMN LAYOUT:
+ * A: Date | B: Name | C: Phone | D: Delivery | E: Email
+ * F: Items JSON (raw) | G: Readable Summary | H: Buddy | I: Comments
+ *
+ * TRIGGERED BY:
+ * User clicking "📋 Little Bites Tools" → "📝 Rebuild Orders from JSON"
+ */
+function buildOrdersFromJson() {
+  const ss = SpreadsheetApp.getActive();
+  const ordersJsonSheet = ss.getSheetByName("orders_json");
+  const ordersSheet = ss.getSheetByName("Orders");
+
+  if (!ordersJsonSheet) {
+    SpreadsheetApp.getUi().alert("⚠️ orders_json sheet not found.");
+    return;
+  }
+  if (!ordersSheet) {
+    SpreadsheetApp.getUi().alert(
+      "⚠️ Orders sheet not found.\n\n" +
+      "Run '🛠️ Rebuild Orders Headers' first to create the Orders sheet, then try again."
+    );
+    return;
+  }
+
+  // Get Orders headers (must already exist)
+  const ordersHeaders = ordersSheet.getRange(1, 1, 1, ordersSheet.getLastColumn()).getValues()[0];
+  if (ordersHeaders.length < 6) {
+    SpreadsheetApp.getUi().alert(
+      "⚠️ Orders sheet has too few columns.\n\n" +
+      "Run '🛠️ Rebuild Orders Headers' first to set up columns, then try again."
+    );
+    return;
+  }
+
+  // Determine data range in orders_json
+  const lastRow = ordersJsonSheet.getLastRow();
+  const lastCol = ordersJsonSheet.getLastColumn();
+  if (lastRow < 1 || lastCol < 6) {
+    SpreadsheetApp.getUi().alert("⚠️ orders_json sheet has no data or is missing columns.");
+    return;
+  }
+
+  // Detect if row 1 is a header row
+  const firstCell = ordersJsonSheet.getRange(1, 1).getValue();
+  const hasHeaders = (typeof firstCell === "string" && firstCell.toLowerCase() === "date");
+  const dataStartRow = hasHeaders ? 2 : 1;
+
+  if (dataStartRow > lastRow) {
+    SpreadsheetApp.getUi().alert("⚠️ No data rows found in orders_json.");
+    return;
+  }
+
+  // Read all data rows from orders_json
+  const numDataRows = lastRow - dataStartRow + 1;
+  const dataRows = ordersJsonSheet.getRange(dataStartRow, 1, numDataRows, lastCol).getValues();
+
+  // Column indices in orders_json (0-based)
+  const JSON_COL = 5; // Column F: raw JSON items
+
+  // --- Clear Orders data and replay from orders_json ---
+
+  // Clear existing data rows in Orders (keep header row)
+  const ordersLastRow = ordersSheet.getLastRow();
+  if (ordersLastRow > 1) {
+    ordersSheet.deleteRows(2, ordersLastRow - 1);
+  }
+
+  // Replay each order using the same logic as writeToOrders
+  let replayedCount = 0;
+
+  dataRows.forEach((row, i) => {
+    const jsonStr = row[JSON_COL];
+    if (!jsonStr || jsonStr.toString().trim() === "") return;
+
+    try {
+      const items = JSON.parse(jsonStr);
+
+      // Build a payload object matching what writeToOrders expects
+      const payload = {
+        name: row[1],      // Column B
+        phone: row[2],     // Column C
+        delivery: row[3],  // Column D
+        email: row[4],     // Column E
+        items: items
+      };
+
+      // Use the original date from orders_json instead of new Date()
+      const originalDate = row[0];
+
+      // --- Replicate writeToOrders logic exactly ---
+      const headers = ordersSheet.getRange(1, 1, 1, ordersSheet.getLastColumn()).getValues()[0];
+      const rowData = new Array(headers.length).fill("");
+
+      // Fill base info (use original date)
+      rowData[0] = originalDate;
+      rowData[1] = payload.name;
+      rowData[2] = payload.phone;
+      rowData[3] = payload.delivery;
+      rowData[4] = payload.email;
+
+      // Process items - group by item name to collect all instances
+      const itemOptionsMap = {};
+
+      payload.items.forEach(item => {
+        if (!itemOptionsMap[item.name]) {
+          itemOptionsMap[item.name] = [];
+        }
+
+        if (item.instances && item.instances.length > 0) {
+          item.instances.forEach(instance => {
+            const instanceOptions = instance.options.filter(Boolean);
+            itemOptionsMap[item.name].push(instanceOptions);
+          });
+        } else {
+          const qty = item.qty || 0;
+          const instanceOptions = item.selectedOptions ? item.selectedOptions.filter(Boolean) : [];
+          for (let q = 0; q < qty; q++) {
+            itemOptionsMap[item.name].push(instanceOptions);
+          }
+        }
+      });
+
+      // Write item counts and option tuples
+      Object.keys(itemOptionsMap).forEach(itemName => {
+        const instances = itemOptionsMap[itemName];
+
+        const itemColIndex = headers.indexOf(itemName);
+        if (itemColIndex !== -1) {
+          rowData[itemColIndex] = instances.length;
+        }
+
+        const optionsColName = `${itemName} - options`;
+        const optionsColIndex = headers.indexOf(optionsColName);
+
+        if (optionsColIndex !== -1) {
+          const optionsString = instances.map(opts => {
+            return opts.length > 0 ? `(${opts.join(", ")})` : "";
+          }).filter(Boolean).join(", ");
+
+          rowData[optionsColIndex] = optionsString;
+        }
+      });
+
+      ordersSheet.appendRow(rowData);
+      replayedCount++;
+    } catch (e) {
+      // Skip rows with unparseable JSON
+    }
+  });
+
+  // Rebuild totals row at the end (once, after all rows)
+  if (replayedCount > 0) {
+    updateTotalsRow(ordersSheet);
+  }
+
+  SpreadsheetApp.getUi().alert(
+    `✅ Orders sheet rebuilt from orders_json.\n\n` +
+    `${replayedCount} order(s) replayed with totals recalculated.`
+  );
 }
