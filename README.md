@@ -1,5 +1,13 @@
 # Little Bites Menu System
 
+> **In production since December 2025.** Operated day to day by the kitchen, not by me.
+>
+> 844 orders across 38 consecutive weekly cycles · 141 customers · 92% repeat (Jan–Sep 2026).
+>
+> Live app: [itsnemo.dev/little-bites-menu-system](https://itsnemo.dev/little-bites-menu-system/)
+>
+> Everything below is the setup and operations guide.
+
 A complete online menu ordering system that replaces Google Forms with a polished, user-friendly interface. Built with vanilla JavaScript and Google Apps Script backend.
 
 ## 📋 Table of Contents
